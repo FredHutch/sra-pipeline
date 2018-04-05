@@ -27,12 +27,12 @@ echo done downloading.
 
 # ( downloads to ~/ncbi/public/sra/)
 
-viruses=(hhv6a hhv6b) # TODO add another virus (and bt2 files)
+viruses=( hhv6a hhv6b ) # TODO add another virus (and bt2 files)
 
 echo starting pipeline...
 
-for virus in $viruses; do
-  echo processing $virus ...
+for virus in "${viruses[@]}"; do
+  echo processing "$virus ...
   fastq-dump -Z ~/ncbi/public/sra/$SRA_ACCESSION.sra | bowtie2 -x /bt2/$virus - | gzip -9 | aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz
 
 done
