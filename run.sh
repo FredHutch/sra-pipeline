@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e # exit on error
+set -o pipefail
 
 # cd ~/ncbi/dbGaP-0/sra
 
@@ -36,4 +37,12 @@ for virus in $viruses; do
 
 done
 
-echo done
+
+
+
+echo done with pipeline, cleaning up
+
+# TODO uncomment when running in batch....
+# rm -rf $scratch
+
+echo exiting...
