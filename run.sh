@@ -6,19 +6,40 @@ set -o pipefail
 # cd ~/ncbi/dbGaP-0/sra
 
 
-# TODO uncomment when running in batch using an AMI that has scratch space at /scratch
-# rm -rf ~/ncbi
-# $scratch=/scratch/$AWS_BATCH_JOB_ID/$AWS_BATCH_JOB_ARRAY_INDEX/
-# mkdir -p $scratch
-# ln -s $scratch ~/ncbi
-# mkdir  ~/ncbi/dbGaP-0
-# cd ncbi
+if [[ -v AWS_BATCH_JOB_ID ]]
+then
+    echo this is an aws batch job
+    rm -rf ~/ncbi
+    aws s3 cp $ACCESSION_LIST /tmp/accessionlist.txt
+    if [[ -v AWS_BATCH_JOB_ARRAY_INDEX ]]
+    then
+        echo this is an array job
+        line="$((LN + 1))"
+        SRA_ACCESSION=$(sed "${line}q;d" /tmp/accessionlist.txt)
+        scratch=/scratch/$AWS_BATCH_JOB_ID/$AWS_BATCH_JOB_ARRAY_INDEX/
+    else
+        echo this is not an array job
+        SRA_ACCESSION=$(sed '1q;d' /tmp/accessionlist.txt)
+        scratch=/scratch/$AWS_BATCH_JOB_ID/
+    fi
+    mkdir -p $scratch
+    ln -s $scratch ~/ncbi
+    mkdir  ~/ncbi/dbGaP-0
+else
+    echo this is not an aws batch job
+    SRA_ACCESSION=$(sed '1q;d' /tmp/accessionlist.txt)
+    scratch=.
+    mkdir -p ~/ncbi/dbGaP-0
+fi
 
 cd ~/ncbi/dbGaP-0
 
 
+echo SRA_ACCESSION is $SRA_ACCESSION
 
-# TODO - translate batch array index into SRA file name, put into $SRA_FILE.
+echo scratch is $scratch
+
+
 
 echo downloading $SRA_ACCESSION from sra...
 prefetch --max-size 100000000000 $SRA_ACCESSION
@@ -42,7 +63,10 @@ done
 
 echo done with pipeline, cleaning up
 
-# TODO uncomment when running in batch....
-# rm -rf $scratch
+if [[ -v AWS_BATCH_JOB_ID ]]
+then
+    rm -rf $scratch
+fi
+
 
 echo exiting...
