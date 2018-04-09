@@ -54,7 +54,14 @@ echo starting pipeline...
 
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
-  fastq-dump -Z ~/ncbi/public/sra/$SRA_ACCESSION.sra | bowtie2 -x /bt2/$virus - | gzip -9 | aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz
+  fastq-dump -Z ~/ncbi/public/sra/$SRA_ACCESSION.sra | bowtie2 -x /bt2/$virus - 2> >(tee stderr.log) | gzip -9  > $SRA_ACCESSION.sam.gz
+  if grep -Fq "(100.00%) aligned 0 times" nomatch; then
+     echo not found: virus $virus does not occur in $SRA_ACCESSION
+  else
+    echo found a match: virus $virus occurs in $SRA_ACCESSION - uploading to S3
+    aws s3 cp $SRA_ACCESSION.sam.gz s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz
+  fi
+  rm $SRA_ACCESSION.sam.gz
 
 done
 
