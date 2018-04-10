@@ -3,7 +3,7 @@
 FROM ubuntu:16.04
 
 # be sure to change this if you change versions of bowtie2 or sratoolkit that you download
-ENV PATH="${PATH}:/root/miniconda3/bin/:/bowtie2-2.3.4.1-linux-x86_64/:/sratoolkit.2.9.0-ubuntu64/bin/"
+# ENV PATH="${PATH}:/root/miniconda3/bin/:/bowtie2-2.3.4.1-linux-x86_64/:/sratoolkit.2.9.0-ubuntu64/bin/"
 
 
 RUN apt-get update -y
@@ -22,26 +22,26 @@ RUN chmod +x Miniconda3-4.3.31-Linux-x86_64.sh
 
 RUN ./Miniconda3-4.3.31-Linux-x86_64.sh -b
 
-RUN  conda config --add channels conda-forge
-RUN  conda config --add channels bioconda
+RUN  /root/miniconda3/bin/conda config --add channels conda-forge
+RUN  /root/miniconda3/bin/conda config --add channels bioconda
 
 
 
-RUN conda install -y parallel-fastq-dump
+RUN /root/miniconda3/bin/conda install -y parallel-fastq-dump
 
 RUN  curl -LO http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.0/sratoolkit.2.9.0-ubuntu64.tar.gz
 RUN tar zxf sratoolkit.2.9.0-ubuntu64.tar.gz
 
 
 ADD prj_17102.ngc /
-RUN vdb-config --import prj_17102.ngc
+RUN /sratoolkit.2.9.0-ubuntu64/bin/vdb-config --import prj_17102.ngc
 
 RUN curl -LO https://github.com/BenLangmead/bowtie2/releases/download/v2.3.4.1/bowtie2-2.3.4.1-linux-x86_64.zip
 
 RUN unzip bowtie2-2.3.4.1-linux-x86_64.zip
 
 
-RUN pip install awscli
+RUN /root/miniconda3/bin/pip install awscli
 
 ADD bt2/ /bt2/
 
@@ -54,6 +54,7 @@ RUN adduser --disabled-password --gecos "" neo
 
 RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
 
+RUN chmod a+rx /root && chmod a+rx /root/miniconda3/ && chmod a+rx /root/miniconda3/bin/
 
 USER neo
 
