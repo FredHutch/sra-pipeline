@@ -57,6 +57,9 @@ RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
 
 USER neo
 
+ENV PATH="${PATH}:/root/miniconda3/bin/:/bowtie2-2.3.4.1-linux-x86_64/:/sratoolkit.2.9.0-ubuntu64/bin/"
+
+
 WORKDIR /home/neo
 
 RUN vdb-config --import /home/neo/prj_17102.ngc
