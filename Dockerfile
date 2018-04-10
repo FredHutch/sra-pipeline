@@ -52,7 +52,6 @@ ADD run.sh /
 
 RUN adduser --disabled-password --gecos "" neo
 
-RUN chmod a+rwx /scratch
 
 USER neo
 
