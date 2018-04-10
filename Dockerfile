@@ -52,10 +52,14 @@ ADD run.sh /
 
 RUN adduser --disabled-password --gecos "" neo
 
+RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
+
 
 USER neo
 
-RUN vdb-config --import /prj_17102.ngc
+WORKDIR /home/neo
+
+RUN vdb-config --import /home/neo/prj_17102.ngc
 
 RUN curl -LO https://download.asperasoft.com/download/sw/connect/3.7.4/aspera-connect-3.7.4.147727-linux-64.tar.gz
 RUN tar zxf aspera-connect-3.7.4.147727-linux-64.tar.gz
