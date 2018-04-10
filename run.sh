@@ -56,6 +56,7 @@ echo starting pipeline...
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
   time (fastq-dump -Z ~/ncbi/dbGap-17102/sra/$SRA_ACCESSION.sra | bowtie2 -x /bt2/$virus - 2> >(tee stderr.log) | gzip -9 | aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
+  aws s3 cp stderr.log s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/bowtie2-output.txt
 done
 
 
