@@ -3,7 +3,6 @@
 set -e # exit on error
 set -o pipefail
 
-# cd ~/ncbi/dbGaP-0/sra
 
 aws s3 cp $ACCESSION_LIST accessionlist.txt
 
@@ -25,12 +24,12 @@ then
     fi
     mkdir -p $scratch
     ln -s $scratch ~/ncbi
-    mkdir  ~/ncbi/dbGaP-0
+    mkdir  ~/ncbi/dbGaP-17102
 else
     echo this is not an aws batch job
     SRA_ACCESSION=$(sed '1q;d' accessionlist.txt)
     scratch=.
-    mkdir -p ~/ncbi/dbGaP-0
+    mkdir -p ~/ncbi/dbGaP-17102
 fi
 
 cd ~/ncbi/dbGaP-17102
