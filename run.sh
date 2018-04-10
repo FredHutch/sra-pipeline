@@ -44,7 +44,7 @@ echo get size of $SRA_ACCESSION ...
 prefetch -s $SRA_ACCESSION
 
 echo downloading $SRA_ACCESSION from sra...
-prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 100M" $SRA_ACCESSION
+prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 10000000000000M" $SRA_ACCESSION
 echo done downloading.
 
 # ( downloads to ~/ncbi/public/sra/)
