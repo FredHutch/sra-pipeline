@@ -5,21 +5,22 @@ set -o pipefail
 
 # cd ~/ncbi/dbGaP-0/sra
 
+mkdir -p /tmp/al
 
 if [[ -v AWS_BATCH_JOB_ID ]]
 then
     echo this is an aws batch job
     rm -rf ~/ncbi
-    aws s3 cp $ACCESSION_LIST /tmp/accessionlist.txt
+    aws s3 cp $ACCESSION_LIST /tmp/al/accessionlist.txt
     if [[ -v AWS_BATCH_JOB_ARRAY_INDEX ]]
     then
         echo this is an array job
         line="$((LN + 1))"
-        SRA_ACCESSION=$(sed "${line}q;d" /tmp/accessionlist.txt)
+        SRA_ACCESSION=$(sed "${line}q;d" /tmp/al/accessionlist.txt)
         scratch=/scratch/$AWS_BATCH_JOB_ID/$AWS_BATCH_JOB_ARRAY_INDEX/
     else
         echo this is not an array job
-        SRA_ACCESSION=$(sed '1q;d' /tmp/accessionlist.txt)
+        SRA_ACCESSION=$(sed '1q;d' /tmp/al/accessionlist.txt)
         scratch=/scratch/$AWS_BATCH_JOB_ID/
     fi
     mkdir -p $scratch
@@ -27,12 +28,12 @@ then
     mkdir  ~/ncbi/dbGaP-0
 else
     echo this is not an aws batch job
-    SRA_ACCESSION=$(sed '1q;d' /tmp/accessionlist.txt)
+    SRA_ACCESSION=$(sed '1q;d' /tmp/al/accessionlist.txt)
     scratch=.
     mkdir -p ~/ncbi/dbGaP-0
 fi
 
-cd ~/ncbi/dbGaP-0
+cd ~/ncbi/dbGaP-17102
 
 
 echo SRA_ACCESSION is $SRA_ACCESSION
@@ -47,7 +48,7 @@ echo done downloading.
 
 # ( downloads to ~/ncbi/public/sra/)
 
-viruses=( hhv6a hhv6b hhv-7 ) 
+viruses=( hhv6a hhv6b hhv-7 )
 
 echo starting pipeline...
 
