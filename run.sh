@@ -42,20 +42,18 @@ echo scratch is $scratch
 
 
 echo downloading $SRA_ACCESSION from sra...
-prefetch --max-size 100000000000 $SRA_ACCESSION
-
+prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 100M" $SRA_ACCESSION
 echo done downloading.
 
 # ( downloads to ~/ncbi/public/sra/)
 
-viruses=( hhv6a hhv6b ) # TODO add another virus (and bt2 files)
+viruses=( hhv6a hhv6b hhv-7 ) 
 
 echo starting pipeline...
 
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
-  fastq-dump -Z ~/ncbi/public/sra/$SRA_ACCESSION.sra | bowtie2 -x /bt2/$virus - | gzip -9 | aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz
-
+  time (fastq-dump -Z ~/ncbi/public/sra/$SRA_ACCESSION.sra | bowtie2 -x /bt2/$virus - 2> >(tee stderr.log) | gzip -9 | aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
 done
 
 

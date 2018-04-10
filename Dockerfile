@@ -33,10 +33,8 @@ RUN  curl -LO http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.0/sratoolkit.2.9.0-u
 RUN tar zxf sratoolkit.2.9.0-ubuntu64.tar.gz
 
 
-# TODO in production, get ngc file from elsewhere, do NOT store it in github, or
-# in docker image if that's possible.
-RUN  curl -O ftp://ftp.ncbi.nlm.nih.gov/sra/examples/decrypt_examples/prj_phs710EA_test.ngc
-RUN vdb-config --import prj_phs710EA_test.ngc
+ADD prj_17102.ngc /
+RUN vdb-config --import prj_17102.ngc
 
 RUN curl -LO https://github.com/BenLangmead/bowtie2/releases/download/v2.3.4.1/bowtie2-2.3.4.1-linux-x86_64.zip
 
@@ -47,6 +45,22 @@ RUN pip install awscli
 
 ADD bt2/ /bt2/
 
+RUN chmod -R a+r /bt2
+
 ADD run.sh /
+
+
+RUN adduser --disabled-password --gecos "" neo
+
+RUN chmod a+rwx /scratch
+
+USER neo
+
+RUN vdb-config --import /prj_17102.ngc
+
+RUN curl -LO https://download.asperasoft.com/download/sw/connect/3.7.4/aspera-connect-3.7.4.147727-linux-64.tar.gz
+RUN tar zxf aspera-connect-3.7.4.147727-linux-64.tar.gz
+RUN bash aspera-connect-3.7.4.147727-linux-64.sh
+
 
 CMD /run.sh
