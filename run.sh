@@ -5,22 +5,22 @@ set -o pipefail
 
 # cd ~/ncbi/dbGaP-0/sra
 
-mkdir -p /tmp/al
+aws s3 cp $ACCESSION_LIST accessionlist.txt
+
 
 if [[ -v AWS_BATCH_JOB_ID ]]
 then
     echo this is an aws batch job
     rm -rf ~/ncbi
-    aws s3 cp $ACCESSION_LIST /tmp/al/accessionlist.txt
     if [[ -v AWS_BATCH_JOB_ARRAY_INDEX ]]
     then
         echo this is an array job
         line="$((LN + 1))"
-        SRA_ACCESSION=$(sed "${line}q;d" /tmp/al/accessionlist.txt)
+        SRA_ACCESSION=$(sed "${line}q;d" accessionlist.txt)
         scratch=/scratch/$AWS_BATCH_JOB_ID/$AWS_BATCH_JOB_ARRAY_INDEX/
     else
         echo this is not an array job
-        SRA_ACCESSION=$(sed '1q;d' /tmp/al/accessionlist.txt)
+        SRA_ACCESSION=$(sed '1q;d' accessionlist.txt)
         scratch=/scratch/$AWS_BATCH_JOB_ID/
     fi
     mkdir -p $scratch
@@ -28,7 +28,7 @@ then
     mkdir  ~/ncbi/dbGaP-0
 else
     echo this is not an aws batch job
-    SRA_ACCESSION=$(sed '1q;d' /tmp/al/accessionlist.txt)
+    SRA_ACCESSION=$(sed '1q;d' accessionlist.txt)
     scratch=.
     mkdir -p ~/ncbi/dbGaP-0
 fi
