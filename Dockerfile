@@ -10,7 +10,7 @@ RUN apt-get update -y
 RUN apt-get update -y
 
 
-RUN apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop
+RUN apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv
 
 
 

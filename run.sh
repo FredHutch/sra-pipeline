@@ -14,7 +14,7 @@ then
     if [[ -v AWS_BATCH_JOB_ARRAY_INDEX ]]
     then
         echo this is an array job
-        line="$((LN + 1))"
+        line="$((AWS_BATCH_JOB_ARRAY_INDEX + 1))"
         SRA_ACCESSION=$(sed "${line}q;d" accessionlist.txt)
         scratch=/scratch/$AWS_BATCH_JOB_ID/$AWS_BATCH_JOB_ARRAY_INDEX/
     else
@@ -55,7 +55,9 @@ echo starting pipeline...
 
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
-  time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra | bowtie2 -x /bt2/$virus - | gzip -9 | aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
+  time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -N fastq-dump| \
+    bowtie2 -x /bt2/$virus - | pv -N bowtie2 | gzip -9  | pv -N gzip | \
+    aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz | pv -N aws  )
 done
 
 
