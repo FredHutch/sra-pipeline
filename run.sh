@@ -57,7 +57,8 @@ for virus in "${viruses[@]}"; do
   echo processing $virus ...
   time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -f -N fastq-dump| \
     bowtie2 -x /bt2/$virus - | pv -f -N bowtie2 | \
-    aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz | pv -f -N aws  )
+    gzip -1 | pv -f -N gzip | \ 
+    aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
 done
 
 

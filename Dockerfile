@@ -60,6 +60,8 @@ USER neo
 
 ENV PATH="${PATH}:/root/miniconda3/bin/:/bowtie2-2.3.4.1-linux-x86_64/:/sratoolkit.2.9.0-ubuntu64/bin/"
 
+RUN  aws configure set default.s3.multipart_chunksize 50MB
+
 
 WORKDIR /home/neo
 
