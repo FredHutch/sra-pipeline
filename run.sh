@@ -58,9 +58,9 @@ echo starting pipeline...
 
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
-  time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -i 600 -f -N fastq-dump| \
-    bowtie2 -x /bt2/$virus - | pv -i 600 -f -N bowtie2 | \
-    gzip -1 | pv -i 600 -f -N gzip | \
+  time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -f -N fastq-dump| \
+    bowtie2 -x /bt2/$virus - | pv -f -N bowtie2 | \
+    gzip -1 | pv -f -N gzip | \
     aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
 done
 
