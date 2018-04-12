@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# send all output to a file as well (see closing brace at the bottom)
+{
+
 set -e # exit on error
 set -o pipefail
-
+set -x
 
 
 aws s3 cp $ACCESSION_LIST accessionlist.txt
@@ -78,3 +81,5 @@ fi
 
 
 echo exiting...
+
+} 2>&1 | tee /tmp/batch.log
