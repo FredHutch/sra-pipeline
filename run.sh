@@ -27,7 +27,7 @@ then
     fi
     mkdir -p $scratch
     ln -s $scratch ~/ncbi
-    mkdir  ~/ncbi/dbGaP-17102
+    mkdir  -p ~/ncbi/dbGaP-17102
 else
     echo this is not an aws batch job
     SRA_ACCESSION=$(sed '1q;d' accessionlist.txt)
