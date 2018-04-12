@@ -4,7 +4,10 @@ set -e # exit on error
 set -o pipefail
 
 
+
 aws s3 cp $ACCESSION_LIST accessionlist.txt
+
+aws configure set default.s3.multipart_chunksize 50MB
 
 
 if [[ -v AWS_BATCH_JOB_ID ]]
@@ -57,7 +60,7 @@ for virus in "${viruses[@]}"; do
   echo processing $virus ...
   time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -f -N fastq-dump| \
     bowtie2 -x /bt2/$virus - | pv -f -N bowtie2 | \
-    gzip -1 | pv -f -N gzip | \ 
+    gzip -1 | pv -f -N gzip | \
     aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
 done
 
