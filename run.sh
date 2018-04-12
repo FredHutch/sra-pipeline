@@ -47,7 +47,7 @@ echo get size of $SRA_ACCESSION ...
 prefetch -s $SRA_ACCESSION
 
 echo downloading $SRA_ACCESSION from sra...
-prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 10000000000000M" $SRA_ACCESSION
+prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 10000000000000M" $SRA_ACCESSION || true
 echo done downloading.
 
 # ( downloads to ~/ncbi/public/sra/)
@@ -58,9 +58,9 @@ echo starting pipeline...
 
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
-  time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -f -N "fastq-dump $virus"| \
-    bowtie2 -x /bt2/$virus - | pv -f -N "bowtie2 $virus" | \
-    gzip -1 | pv -f -N "gzip $virus" | \
+  time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -i 59 -f -N "fastq-dump $virus"| \
+    bowtie2 -x /bt2/$virus - | pv -i 59 -f -N "bowtie2 $virus" | \
+    gzip -1 | pv -i 59 -f -N "gzip $virus" | \
     aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
 done
 
