@@ -50,10 +50,12 @@ echo get size of $SRA_ACCESSION ...
 prefetch -s $SRA_ACCESSION
 
 echo downloading $SRA_ACCESSION from sra...
-set +e
-prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 10000000000000M" $SRA_ACCESSION
-set -e
-echo done downloading.
+if [ -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra ]; then
+  echo SRA file already exists, skipping download
+else
+  prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 10000000000000M" $SRA_ACCESSION
+  echo done downloading.
+fi
 
 # ( downloads to ~/ncbi/public/sra/)
 
@@ -63,10 +65,14 @@ echo starting pipeline...
 
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
-  time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -i 59 -f -N "fastq-dump $virus"| \
-    bowtie2 -x /bt2/$virus - | pv -i 59 -f -N "bowtie2 $virus" | \
-    gzip -1 | pv -i 59 -f -N "gzip $virus" | \
-    aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
+  if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz  &> /dev/null; then
+    echo output file already exists in S3, skipping....
+  else
+    time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -i 59 -f -N "fastq-dump $virus"| \
+      bowtie2 -x /bt2/$virus - | pv -i 59 -f -N "bowtie2 $virus" | \
+      gzip -1 | pv -i 59 -f -N "gzip $virus" | \
+      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
+  fi
 done
 
 
