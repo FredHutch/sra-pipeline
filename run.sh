@@ -7,6 +7,10 @@ set -e # exit on error
 set -o pipefail
 set -x
 
+public_hostname=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)
+echo public hostname for this container is $public_hostname
+container_id=$(cat /proc/self/cgroup | head -n 1 | cut -d '/' -f3)
+echo container id is $container_id
 
 aws s3 cp $ACCESSION_LIST accessionlist.txt
 
