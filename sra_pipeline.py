@@ -23,7 +23,7 @@ def show_completed():
     "show completed accession numbers"
     s3 = boto3.client("s3") # pylint: disable=invalid-name
     completed_map = defaultdict(list)
-    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results", MaxKeys=3)
+    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results", MaxKeys=999)
     while True:
         response = s3.list_objects_v2(**args)
         for item in response['Contents']:
