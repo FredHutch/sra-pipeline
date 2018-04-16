@@ -33,7 +33,7 @@ where each child will process a single accession number, doing the following:
 
 ## Prerequisites/Requirements
 
-* Run all these tools on the Fred Hutch internal network.
+* These tools must all be run on the Fred Hutch internal network.
 * Obtain your S3 credentials using the
   [awscreds](https://teams.fhcrc.org/sites/citwiki/SciComp/Pages/Getting%20AWS%20Credentials.aspx)
   script. You only need to do this once.
