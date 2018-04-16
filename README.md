@@ -20,7 +20,7 @@ where each child will process a single accession number, doing the following:
     file is highly compressed and this step can expand it to more than 20 times
     its size, which is one reason we stream the data in a pipe: so as to
     not need lots of scratch space.
- * Pipe the `fastq` data through\
+ * Pipe the `fastq` data through
    [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
    to search for the virus.
  * Pipe the output of `bowtie2` through
