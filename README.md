@@ -33,11 +33,13 @@ where each child will process a single accession number, doing the following:
 
 ## Prerequisites/Requirements
 
-* You must run all these tools on the Fred Hutch internal network.
-* You must obtain your S3 credentials using the
+* Run all these tools on the Fred Hutch internal network.
+* Obtain your S3 credentials using the
   [awscreds](https://teams.fhcrc.org/sites/citwiki/SciComp/Pages/Getting%20AWS%20Credentials.aspx)
   script. You only need to do this once.
-* You must clone this repository to a location under your home directory, and then
+* [Request access](https://fredhutch.github.io/aws-batch-at-hutch-docs/#request-access)
+  to AWS Batch.
+* Clone this repository to a location under your home directory, and then
   change directories into the repository (you only need to do this once,
   although you may need to run `git pull` periodically to keep
   your cloned repository up to date):
