@@ -58,13 +58,14 @@ A script called `sra_pipeline` is available to to simplify the following:
 * Display accession numbers that have already been processed.
 * Display accession numbers which are currently being processed.
 * Submit some number of new accession numbers to the pipeline, choosing
-  either randomly, or by picking the smallest available data sets.
+  either randomly, by picking the smallest available data sets, or
+  by providing a file containing accession numbers.
 
 Running the utility with `--help` gives usage information:
 
 ```
 $ ./sra_pipeline --help
-usage: sra_pipeline.py [-h] [-c] [-i] [-s N] [-r N]
+usage: sra_pipeline.py [-h] [-c] [-i] [-s N] [-r N] [-f FILE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -74,6 +75,8 @@ optional arguments:
                         submit N jobs of ascending size
   -r N, --submit-random N
                         submit N randomly chosen jobs
+  -f FILE, --submit-file FILE
+                        submit accession numbers contained in FILE
 ```
 
 

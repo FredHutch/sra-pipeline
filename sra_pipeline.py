@@ -49,7 +49,7 @@ def show_in_progress(): # pylint: disable=too-many-locals
         results = batch.list_jobs(jobQueue="mixed", jobStatus=state)
         state_jobs.extend(results['jobSummaryList'])
     job_ids = [x['jobId'] for x in state_jobs]
-    if not len(job_ids):
+    if not job_ids:
         return []
     chunks = []
     jobs = []
@@ -121,18 +121,24 @@ def get_latest_jobdef_revision(batch_client, jobdef_name): # FIXME handle pagina
         raise ValueError("No job definition called {}.".format(jobdef_name))
     return max(results, key=lambda x: x['revision'])['revision']
 
-def submit(num_rows, method): # pylint: disable=too-many-locals
+def submit(num_rows, method, filename=None): # pylint: disable=too-many-locals
     """
     Utility function to submit jobs.
     Args:
         num_rows: Number of accession numbers to process, passed to select_from_csv()
-        method: Either 'random' or 'small', passed to select_from_csv()
+        method: 'random', 'small' (passed to select_from_csv()), or 'filename'
+        filename: list of accession numbers
     """
     s3 = boto3.client("s3") # pylint: disable=invalid-name
     batch = boto3.client("batch")
     now = datetime.datetime.now()
     nowstr = now.strftime("%Y%m%d%H%M%S")
-    accession_nums = select_from_csv(num_rows, method)
+    if filename:
+        with open(filename, "r") as fileh:
+            accession_nums = fileh.readlines()
+            accession_nums = [x.strip() for x in accession_nums]
+    else:
+        accession_nums = select_from_csv(num_rows, method)
     bytesarr = bytearray("\n".join(accession_nums), "utf-8")
     bytesio = io.BytesIO(bytesarr)
     job_size = len(accession_nums)
@@ -160,6 +166,10 @@ def submit_random(num_jobs):
     "submit <num_jobs> randomly chosen jobs"
     return submit(num_jobs, "random")
 
+def submit_file(filename):
+    "submit accession numbers from filename"
+    return submit(0, "file", filename)
+
 def main():
     "do the work"
     parser = argparse.ArgumentParser()
@@ -172,6 +182,8 @@ def main():
                         type=int, metavar='N')
     parser.add_argument("-r", "--submit-random", help="submit N randomly chosen jobs",
                         type=int, metavar='N')
+    parser.add_argument("-f", "--submit-file", help="submit accession numbers contained in FILE",
+                        type=str, metavar='FILE')
 
     args = parser.parse_args()
     if len(sys.argv) == 1:
@@ -190,6 +202,9 @@ def main():
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.submit_random:
         result = submit_random(args.submit_random)
+        print(json.dumps(result, sort_keys=True, indent=4))
+    elif args.submit_file:
+        result = submit_file(args.submit_file)
         print(json.dumps(result, sort_keys=True, indent=4))
 
 if __name__ == "__main__":
