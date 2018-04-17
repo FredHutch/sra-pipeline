@@ -1,5 +1,11 @@
 #!/bin/bash
 
+set -o pipefail
+
+set -e
+
+
+
 # send all output to a file as well (see closing brace at the bottom)
 {
 
