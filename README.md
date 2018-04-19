@@ -20,15 +20,15 @@ where each child will process a single accession number, doing the following:
     file is highly compressed and this step can expand it to more than 20 times
     its size, which is one reason we stream the data in a pipe: so as to
     not need lots of scratch space.
- * Pipe the `fastq` data through
-   [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
-   to search for the virus.
- * Pipe the output of `bowtie2` through
-   [gzip](https://en.wikipedia.org/wiki/Gzip) to compress it prior to
-   the next step.
- * stream the compressed output of `bowtie2` to an
-   [S3](https://aws.amazon.com/s3/) bucket. The resulting file will
-   have an S3 URL like this: `s3://<bucket-name>/pipeline-results/<SRA-accession-number>/<virus>/<SRA-accession-number>.sam.gz`.
+   * Pipe the `fastq` data through
+     [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+     to search for the virus.
+   * Pipe the output of `bowtie2` through
+     [gzip](https://en.wikipedia.org/wiki/Gzip) to compress it prior to
+     the next step.
+   * stream the compressed output of `bowtie2` to an
+     [S3](https://aws.amazon.com/s3/) bucket. The resulting file will
+     have an S3 URL like this: `s3://<bucket-name>/pipeline-results/<SRA-accession-number>/<virus>/<SRA-accession-number>.sam.gz`.
 
 
 ## Prerequisites/Requirements
