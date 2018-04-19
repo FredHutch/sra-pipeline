@@ -21,6 +21,8 @@ pandas = "*"
 
 [dev-packages]
 
+pylint = "*"
+ipython = "*"
 
 
 [requires]

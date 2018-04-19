@@ -68,7 +68,7 @@ echo downloading $SRA_ACCESSION from sra...
 if [ -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra ]; then
   echo SRA file already exists, skipping download
 else
-  if prefetch --max-size 100000000000 --transport ascp --ascp-options "-l 10000000000000M" $SRA_ACCESSION ; then
+  if prefetch --transport http --max-size 100000000000 $SRA_ACCESSION ; then
     echo finished downloading, prefetch exited with result code 0
   else
     result=$?
