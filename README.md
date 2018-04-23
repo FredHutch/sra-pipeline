@@ -28,7 +28,7 @@ where each child will process a single accession number, doing the following:
      the next step.
    * stream the compressed output of `bowtie2` to an
      [S3](https://aws.amazon.com/s3/) bucket. The resulting file will
-     have an S3 URL like this: `s3://<bucket-name>/pipeline-results/<SRA-accession-number>/<virus>/<SRA-accession-number>.sam.gz`.
+     have an S3 URL like this: `s3://<bucket-name>/pipeline-results2/<SRA-accession-number>/<virus>/<SRA-accession-number>.sam.gz`.
 
 
 ## Prerequisites/Requirements

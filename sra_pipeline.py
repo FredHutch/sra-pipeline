@@ -23,7 +23,7 @@ def show_completed():
     "show completed accession numbers"
     s3 = boto3.client("s3") # pylint: disable=invalid-name
     completed_map = defaultdict(list)
-    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results", MaxKeys=999)
+    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results2", MaxKeys=999)
     while True:
         response = s3.list_objects_v2(**args)
         for item in response['Contents']:
@@ -146,7 +146,7 @@ def submit(num_rows, method, filename=None): # pylint: disable=too-many-locals
     url = "s3://fh-pi-jerome-k/sra-submission-manifests/{}".format(key)
     s3.upload_fileobj(bytesio, "fh-pi-jerome-k", "sra-submission-manifests/{}".format(key))
     job_name = "sra-pipeline-{}-{}-{}".format(os.getenv("USER"), nowstr, job_size)
-    env = to_aws_env(dict(BUCKET_NAME="fh-pi-jerome-k", PREFIX="pipeline-results",
+    env = to_aws_env(dict(BUCKET_NAME="fh-pi-jerome-k", PREFIX="pipeline-results2",
                           ACCESSION_LIST=url))
     job_def_name = "sra-pipeline" # use "hello" for testing, "sra-pipeline" for production
     jobdef = "{}:{}".format(job_def_name, get_latest_jobdef_revision(batch, job_def_name))

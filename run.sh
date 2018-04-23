@@ -79,6 +79,12 @@ else
   fi
 fi
 
+fastq_url=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/$SRA_ACCESSION.fastq
+
+echo streaming fastq-dump output to s3...
+
+fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra | pv -i 59 -N fastq-dump | aws s3 cp - $fastq_url
+
 # ( downloads to ~/ncbi/public/sra/)
 
 viruses=( hhv6a hhv6b hhv-7 )
@@ -87,13 +93,12 @@ echo starting pipeline...
 
 for virus in "${viruses[@]}"; do
   echo processing $virus ...
-  if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz  &> /dev/null; then
+  if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam  &> /dev/null; then
     echo output file already exists in S3, skipping....
   else
-    time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra |pv -i 59 -f -N "fastq-dump $virus"| \
-      bowtie2 -x /bt2/$virus - | pv -i 59 -f -N "bowtie2 $virus" | \
-      gzip -1 | pv -i 59 -f -N "gzip $virus" | \
-      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam.gz )
+    time (aws s3 cp $fastq_url - | pv -i 59 -N "aws $virus" | \
+      bowtie2 --no-unal -x /bt2/$virus - | pv -i 59 -f -N "bowtie2 $virus" | \
+      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam )
   fi
 done
 
