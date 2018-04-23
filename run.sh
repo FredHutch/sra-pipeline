@@ -112,6 +112,9 @@ then
     rm -rf $scratch
 fi
 
+echo removing fastq file from s3...
+aws s3 rm $fastq_url
+
 
 echo exiting...
 
