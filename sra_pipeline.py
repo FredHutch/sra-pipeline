@@ -26,6 +26,8 @@ def show_completed():
     args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results2", MaxKeys=999)
     while True:
         response = s3.list_objects_v2(**args)
+        if not 'Contents' in response:
+            return []
         for item in response['Contents']:
             segs = item['Key'].split("/")
             accession = segs[1]
