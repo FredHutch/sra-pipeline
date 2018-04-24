@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 
-def done_downloading(job_id):
+def done_downloading(job_id, search_string="finished downloading"):
     "show which children are done downloading"
     logs = boto3.client("logs")
     batch = boto3.client("batch")
@@ -48,7 +48,7 @@ def done_downloading(job_id):
             if 'nextBackwardToken' in resp:
                 args['nextToken'] = resp['nextBackwardToken']
             for event in resp['events']:
-                if "finished downloading" in event['message']:
+                if search_string in event['message']:
                     out[index] = 1
                     break
     return sorted(list(out.keys()))
@@ -224,8 +224,10 @@ def main():
     parser.add_argument("-f", "--submit-file", help="submit accession numbers contained in FILE",
                         type=str, metavar='FILE')
     parser.add_argument("-d", "--done-downloading",
-                        help="show which children in JOB_ID are done downloading",
+                        help="show which children in JOB_ID have 'finished downloading' in logs",
                         type=str, metavar="JOB_ID")
+    parser.add_argument("-q", "--query", help="use with -d to list children with STR in logs",
+                        type=str, metavar="STR")
 
     args = parser.parse_args()
     if len(sys.argv) == 1:
@@ -249,7 +251,10 @@ def main():
         result = submit_file(args.submit_file)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.done_downloading:
-        result = done_downloading(args.done_downloading)
+        kwargs = dict(job_id=args.done_downloading)
+        if args.query:
+            kwargs['search_string'] = args.query
+        result = done_downloading(**kwargs)
         for item in result:
             print(item)
 
