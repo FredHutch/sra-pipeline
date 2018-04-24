@@ -107,13 +107,16 @@ done
 
 echo done with pipeline, cleaning up
 
+echo removing fastq file from s3...
+aws s3 rm $fastq_url
+
+echo removing scratch...
+
 if [[ -v AWS_BATCH_JOB_ID ]]
 then
     rm -rf $scratch
 fi
 
-echo removing fastq file from s3...
-aws s3 rm $fastq_url
 
 
 echo exiting...
