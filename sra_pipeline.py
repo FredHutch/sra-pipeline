@@ -19,6 +19,43 @@ import boto3
 import numpy as np
 import pandas as pd
 
+
+def done_downloading(job_id):
+    "show which children are done downloading"
+    logs = boto3.client("logs")
+    batch = boto3.client("batch")
+    resp = batch.describe_jobs(jobs=[job_id])
+    if not 'jobs' in resp:
+        raise ValueError("no such job")
+    job = resp['jobs'][0]
+    if not 'arrayProperties' in job:
+        raise ValueError("this is not an array job")
+    size = job['arrayProperties']['size']
+    out = {}
+    for index in range(size):
+        child_id = "{}:{}".format(job_id, index)
+        child_desc = batch.describe_jobs(jobs=[child_id])['jobs'][0]
+        if not 'container' in child_desc:
+            raise ValueError("'container' key not found")
+        if not 'logStreamName' in child_desc['container']:
+            raise ValueError("'logStreamName' not found")
+        lsn = child_desc['container']['logStreamName']
+        args = dict(logGroupName="/aws/batch/job", logStreamName=lsn)
+        while True:
+            resp = logs.get_log_events(**args)
+            if not resp['events']:
+                break
+            if 'nextBackwardToken' in resp:
+                args['nextToken'] = resp['nextBackwardToken']
+            for event in resp['events']:
+                if "finished downloading" in event['message']:
+                    out[index] = 1
+                    break
+    return sorted(list(out.keys()))
+
+
+
+
 def show_completed():
     "show completed accession numbers"
     s3 = boto3.client("s3") # pylint: disable=invalid-name
@@ -186,6 +223,9 @@ def main():
                         type=int, metavar='N')
     parser.add_argument("-f", "--submit-file", help="submit accession numbers contained in FILE",
                         type=str, metavar='FILE')
+    parser.add_argument("-d", "--done-downloading",
+                        help="show which children in JOB_ID are done downloading",
+                        type=str, metavar="JOB_ID")
 
     args = parser.parse_args()
     if len(sys.argv) == 1:
@@ -208,6 +248,10 @@ def main():
     elif args.submit_file:
         result = submit_file(args.submit_file)
         print(json.dumps(result, sort_keys=True, indent=4))
+    elif args.done_downloading:
+        result = done_downloading(args.done_downloading)
+        for item in result:
+            print(item)
 
 if __name__ == "__main__":
     main()
