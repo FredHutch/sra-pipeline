@@ -38,7 +38,7 @@ def done_downloading(job_id):
         if not 'container' in child_desc:
             raise ValueError("'container' key not found")
         if not 'logStreamName' in child_desc['container']:
-            raise ValueError("'logStreamName' not found")
+            continue
         lsn = child_desc['container']['logStreamName']
         args = dict(logGroupName="/aws/batch/job", logStreamName=lsn)
         while True:
