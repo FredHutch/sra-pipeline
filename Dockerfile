@@ -5,7 +5,7 @@ FROM ubuntu:16.04
 RUN apt-get update -y
 
 
-RUN apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv python3-pip
+RUN apt-get update -y && apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv python3-pip
 
 RUN  curl -LO http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.0/sratoolkit.2.9.0-ubuntu64.tar.gz
 RUN tar zxf sratoolkit.2.9.0-ubuntu64.tar.gz
