@@ -48,7 +48,7 @@ def inspect_logs(args):#index, batch, logs, job_id, search_string):
 
 
 def search_logs(job_id, search_string):
-    "show which children are done downloading"
+    "search logs for a given string, return child indices where found"
     batch = boto3.client("batch")
     resp = batch.describe_jobs(jobs=[job_id])
     if not 'jobs' in resp:
@@ -61,7 +61,10 @@ def search_logs(job_id, search_string):
     for index in range(size):
         iargs.append(dict(job_id=job_id, search_string=search_string, index=index))
 
-    with Pool() as pool:
+    pool_size = os.cpu_count()
+    if pool_size > 50:
+        pool_size -= 1
+    with Pool(pool_size) as pool:
         results = pool.map(inspect_logs, iargs)
 
 
@@ -239,7 +242,8 @@ def main():
                         type=str, metavar='FILE')
     parser.add_argument("-q", "--query", help="string to search for in logs, must specify JOB_ID",
                         type=str, metavar="STR", default="finished downloading")
-    parser.add_argument("job_id", nargs='?', help="a job ID to search the logs of (use with -q only)")
+    parser.add_argument("job_id", nargs='?',
+                        help="a job ID to search the logs of (use with -q only)")
 
     args = parser.parse_args()
     if len(sys.argv) == 1:
