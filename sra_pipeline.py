@@ -63,7 +63,7 @@ def search_logs(job_id, search_string):
 
     pool_size = os.cpu_count()
     if pool_size > 50:
-        pool_size -= 1
+        pool_size = 3
     with Pool(pool_size) as pool:
         results = pool.map(inspect_logs, iargs)
 
