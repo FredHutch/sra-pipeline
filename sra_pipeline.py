@@ -11,6 +11,7 @@ import json
 import os
 import sys
 
+from multiprocessing import Pool
 from collections import defaultdict
 from math import ceil
 from urllib.parse import urlparse
@@ -20,9 +21,34 @@ import numpy as np
 import pandas as pd
 
 
-def done_downloading(job_id, search_string="finished downloading"):
-    "show which children are done downloading"
+def inspect_logs(args):#index, batch, logs, job_id, search_string):
+    "parallelizable(?) function to look at logs for a single child"
+    index = args['index']
+    search_string = args['search_string']
+    job_id = args['job_id']
+    batch = boto3.client("batch")
     logs = boto3.client("logs")
+    child_id = "{}:{}".format(job_id, index)
+    child_desc = batch.describe_jobs(jobs=[child_id])['jobs'][0]
+    if not 'container' in child_desc:
+        return False
+    if not 'logStreamName' in child_desc['container']:
+        return False
+    lsn = child_desc['container']['logStreamName']
+    args = dict(logGroupName="/aws/batch/job", logStreamName=lsn)
+    while True:
+        resp = logs.get_log_events(**args)
+        if not resp['events']:
+            return False
+        if 'nextBackwardToken' in resp:
+            args['nextToken'] = resp['nextBackwardToken']
+        for event in resp['events']:
+            if search_string in event['message']:
+                return True
+
+
+def search_logs(job_id, search_string="finished downloading"):
+    "show which children are done downloading"
     batch = boto3.client("batch")
     resp = batch.describe_jobs(jobs=[job_id])
     if not 'jobs' in resp:
@@ -31,27 +57,15 @@ def done_downloading(job_id, search_string="finished downloading"):
     if not 'arrayProperties' in job:
         raise ValueError("this is not an array job")
     size = job['arrayProperties']['size']
-    out = {}
+    iargs = []
     for index in range(size):
-        child_id = "{}:{}".format(job_id, index)
-        child_desc = batch.describe_jobs(jobs=[child_id])['jobs'][0]
-        if not 'container' in child_desc:
-            raise ValueError("'container' key not found")
-        if not 'logStreamName' in child_desc['container']:
-            continue
-        lsn = child_desc['container']['logStreamName']
-        args = dict(logGroupName="/aws/batch/job", logStreamName=lsn)
-        while True:
-            resp = logs.get_log_events(**args)
-            if not resp['events']:
-                break
-            if 'nextBackwardToken' in resp:
-                args['nextToken'] = resp['nextBackwardToken']
-            for event in resp['events']:
-                if search_string in event['message']:
-                    out[index] = 1
-                    break
-    return sorted(list(out.keys()))
+        iargs.append(dict(job_id=job_id, search_string=search_string, index=index))
+
+    with Pool() as pool:
+        results = pool.map(inspect_logs, iargs)
+
+
+    return [i for i, x in enumerate(results) if x]
 
 
 
@@ -223,11 +237,9 @@ def main():
                         type=int, metavar='N')
     parser.add_argument("-f", "--submit-file", help="submit accession numbers contained in FILE",
                         type=str, metavar='FILE')
-    parser.add_argument("-d", "--done-downloading",
-                        help="show which children in JOB_ID have 'finished downloading' in logs",
-                        type=str, metavar="JOB_ID")
-    parser.add_argument("-q", "--query", help="use with -d to list children with STR in logs",
-                        type=str, metavar="STR")
+    parser.add_argument("-q", "--query", help="string to search for in logs, must specify JOB_ID",
+                        type=str, metavar="STR", default="finished downloading")
+    parser.add_argument("job_id", nargs='?', help="a job ID to search the logs of (use with -q only)")
 
     args = parser.parse_args()
     if len(sys.argv) == 1:
@@ -250,11 +262,11 @@ def main():
     elif args.submit_file:
         result = submit_file(args.submit_file)
         print(json.dumps(result, sort_keys=True, indent=4))
-    elif args.done_downloading:
-        kwargs = dict(job_id=args.done_downloading)
+    elif args.job_id:
+        kwargs = dict(job_id=args.job_id)
         if args.query:
             kwargs['search_string'] = args.query
-        result = done_downloading(**kwargs)
+        result = search_logs(**kwargs)
         for item in result:
             print(item)
 
