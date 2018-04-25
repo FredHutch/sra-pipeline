@@ -47,7 +47,7 @@ def inspect_logs(args):#index, batch, logs, job_id, search_string):
                 return True
 
 
-def search_logs(job_id, search_string="finished downloading"):
+def search_logs(job_id, search_string):
     "show which children are done downloading"
     batch = boto3.client("batch")
     resp = batch.describe_jobs(jobs=[job_id])
@@ -263,10 +263,7 @@ def main():
         result = submit_file(args.submit_file)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.job_id:
-        kwargs = dict(job_id=args.job_id)
-        if args.query:
-            kwargs['search_string'] = args.query
-        result = search_logs(**kwargs)
+        result = search_logs(args.job_id, args.query)
         for item in result:
             print(item)
 
