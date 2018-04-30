@@ -71,7 +71,24 @@ def search_logs(job_id, search_string):
     return [i for i, x in enumerate(results) if x]
 
 
+def get_failsons(batch, job_id):
+    """
+    get ids of children that have failed
+    """
+    args = dict(arrayJobId=job_id, jobStatus="FAILED")
+    failsons = []
+    while True:
+        response = batch.list_jobs(**args)
+        if not 'jobSummaryList' in response or not response['jobSummaryList']:
+            return []
 
+        jsl = response['jobSummaryList']
+        failsons.extend([x['arrayProperties']['index'] for x in jsl])
+        try:
+            args['nextToken'] = response['nextToken']
+        except KeyError:
+            break
+    return set(failsons)
 
 def show_completed():
     "show completed accession numbers"
@@ -122,15 +139,17 @@ def show_in_progress(): # pylint: disable=too-many-locals
         if 'container' in job and 'environment' in job['container']:
             for item in job['container']['environment']:
                 if item['name'] == 'ACCESSION_LIST':
-                    accession_lists_map[item['value']] = 1
+                    accession_lists_map[item['value']] = get_failsons(batch, job['jobId'])
     accession_nums = []
-    for item in accession_lists_map:
+    for item, failsons in accession_lists_map.items():
         url = urlparse(item)
         bucket = url.netloc
         key = url.path.lstrip("/")
         flh = io.BytesIO()
         s3.download_fileobj(bucket, key, flh)
-        accession_nums.extend(flh.getvalue().decode('utf-8').strip().split("\n"))
+        tmp = flh.getvalue().decode('utf-8').strip().split("\n")
+        tmp = [x for i, x in enumerate(tmp) if not i in failsons]
+        accession_nums.extend(tmp)
     return accession_nums
 
 
