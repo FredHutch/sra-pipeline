@@ -84,11 +84,11 @@ else
   fi
 fi
 
-fastq_url=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/$SRA_ACCESSION.fastq
+fastq_url=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/$SRA_ACCESSION.fastq.gz
 
 echo streaming fastq-dump output to s3...
 
-time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra | pv -i 59 -N fastq-dump | aws s3 cp - $fastq_url)
+time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra | pv -i 59 -N fastq-dump |gzip| pv -i 59 -N gzip | aws s3 cp - $fastq_url)
 
 # ( downloads to ~/ncbi/public/sra/)
 
