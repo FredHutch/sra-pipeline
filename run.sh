@@ -103,7 +103,7 @@ virus="gapdhpolyAtrimmed"
   if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam  &> /dev/null; then
     echo output file already exists in S3, skipping....
   else
-    time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra | pv -i 30 -N "fastq-dump" \
+    time (fastq-dump -Z ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra | pv -i 30 -N "fastq-dump" | \
       bowtie2 --no-unal -x /bt2/$virus - | pv -i 30 -f -N "bowtie2 $virus" | \
       aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam )
   fi
