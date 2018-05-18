@@ -11,7 +11,7 @@ import json
 import os
 import sys
 
-from multiprocessing import Pool
+# from multiprocessing import Pool
 from collections import defaultdict
 from math import ceil
 from urllib.parse import urlparse
@@ -65,11 +65,14 @@ def search_logs(job_id, search_string):
     for index in range(size):
         iargs.append(dict(job_id=job_id, search_string=search_string, index=index))
 
-    pool_size = os.cpu_count()
-    if pool_size > 50:
-        pool_size = 3
-    with Pool(pool_size) as pool:
-        results = pool.map(inspect_logs, iargs)
+    # pool_size = os.cpu_count()
+    # if pool_size > 50:
+    #     pool_size = 3
+    # with Pool(pool_size) as pool:
+    #     results = pool.map(inspect_logs, iargs)
+    results = []
+    for item in iargs:
+        results.append(inspect_logs(item))
 
 
     return [i for i, x in enumerate(results) if x]
