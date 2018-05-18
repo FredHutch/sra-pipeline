@@ -20,6 +20,10 @@ import boto3
 import numpy as np
 import pandas as pd
 
+# TODO change this if we have a different number of viruses
+# NUM_VIRUSES=3
+NUM_VIRUSES = 1
+
 
 def inspect_logs(args):#index, batch, logs, job_id, search_string):
     "parallelizable(?) function to look at logs for a single child"
@@ -108,7 +112,8 @@ def show_completed():
             args['ContinuationToken'] = response['NextContinuationToken']
         except KeyError:
             break
-    completed = [x for x in completed_map.keys() if len(completed_map[x]) == 3]
+    print(completed_map)
+    completed = [x for x in completed_map.keys() if len(completed_map[x]) == NUM_VIRUSES]
     return completed
 
 
