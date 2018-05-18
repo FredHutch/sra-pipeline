@@ -10,19 +10,24 @@ import io
 import json
 import os
 import sys
+from time import sleep
 
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 from math import ceil
 from urllib.parse import urlparse
 
 import boto3
+from botocore.exceptions import ClientError
 import numpy as np
 import pandas as pd
 
 # TODO change this if we have a different number of viruses
 # NUM_VIRUSES=3
 NUM_VIRUSES = 1
+
+RETRY_EXCEPTIONS = ('ProvisionedThroughputExceededException',
+                    'ThrottlingException')
 
 
 def inspect_logs(args):#index, batch, logs, job_id, search_string):
@@ -40,15 +45,23 @@ def inspect_logs(args):#index, batch, logs, job_id, search_string):
         return False
     lsn = child_desc['container']['logStreamName']
     args = dict(logGroupName="/aws/batch/job", logStreamName=lsn)
+    retries = 0
     while True:
-        resp = logs.get_log_events(**args)
-        if not resp['events']:
-            return False
-        if 'nextBackwardToken' in resp:
-            args['nextToken'] = resp['nextBackwardToken']
-        for event in resp['events']:
-            if search_string in event['message']:
-                return True
+        try:
+            resp = logs.get_log_events(**args)
+            if not resp['events']:
+                return False
+            if 'nextBackwardToken' in resp:
+                args['nextToken'] = resp['nextBackwardToken']
+            for event in resp['events']:
+                if search_string in event['message']:
+                    return True
+        except ClientError as err:
+            if err.response['Error']['Code'] not in RETRY_EXCEPTIONS:
+                raise
+            # print("retrying...")
+            sleep(2 ** retries)
+            retries += 1 # TODO max retries
 
 
 def search_logs(job_id, search_string):
@@ -65,12 +78,9 @@ def search_logs(job_id, search_string):
     for index in range(size):
         iargs.append(dict(job_id=job_id, search_string=search_string, index=index))
 
-    pool_size = os.cpu_count()
-    if pool_size > 50:
-        pool_size = 3
-    with Pool(pool_size) as pool:
+    pool_size = 12
+    with ThreadPool(pool_size) as pool:
         results = pool.map(inspect_logs, iargs)
-
 
     return [i for i, x in enumerate(results) if x]
 
