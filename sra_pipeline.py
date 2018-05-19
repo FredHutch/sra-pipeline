@@ -122,7 +122,6 @@ def show_completed():
             args['ContinuationToken'] = response['NextContinuationToken']
         except KeyError:
             break
-    print(completed_map)
     completed = [x for x in completed_map.keys() if len(completed_map[x]) == NUM_VIRUSES]
     return completed
 
