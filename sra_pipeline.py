@@ -239,10 +239,11 @@ def submit(num_rows, method, filename=None): # pylint: disable=too-many-locals
                           ACCESSION_LIST=url))
     job_def_name = "sra-pipeline" # use "hello" for testing, "sra-pipeline" for production
     jobdef = "{}:{}".format(job_def_name, get_latest_jobdef_revision(batch, job_def_name))
-    res = batch.submit_job(jobName=job_name, jobQueue="mixed",
-                           arrayProperties=dict(size=job_size),
-                           jobDefinition=jobdef,
-                           containerOverrides=dict(environment=env))
+    args = dict(jobName=job_name, jobQueue="mixed", jobDefinition=jobdef,
+                containerOverrides=dict(environment=env))
+    if job_size > 1:
+        args['arrayProperties'] = dict(size=job_size)
+    res = batch.submit_job(**args)
 
     del res['ResponseMetadata']
     return res
