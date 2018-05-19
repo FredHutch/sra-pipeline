@@ -164,7 +164,10 @@ def show_in_progress(): # pylint: disable=too-many-locals
         tmp = flh.getvalue().decode('utf-8').strip().split("\n")
         tmp = [x for i, x in enumerate(tmp) if not i in failsons]
         accession_nums.extend(tmp)
-    return accession_nums
+
+    completed = set(show_completed())
+    ret = set(accession_nums) - completed
+    return list(ret)
 
 
 
