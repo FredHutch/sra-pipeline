@@ -189,6 +189,9 @@ def select_from_csv(num_rows, method):
     nrow = df.shape[0]
     if num_rows > nrow:
         num_rows = nrow
+    if num_rows < 1:
+        print("no SRAs left to process.")
+        sys.exit(1)
     if method == "small":
         return df['accession_number'].head(num_rows).tolist()
     return df['accession_number'].sample(num_rows).tolist()
