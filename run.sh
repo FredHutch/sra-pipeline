@@ -97,7 +97,7 @@ fastq_url=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/$SRA_ACCESSION.fastq.g
 echo starting pipeline...
 
 # for virus in "${viruses[@]}"; do
-virus="gapdhpolyAtrimmed"
+virus="betaglobincds"
 
   echo processing $virus ...
   if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam  &> /dev/null; then
