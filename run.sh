@@ -59,7 +59,8 @@ else
 fi
 
 cd ~/ncbi/dbGaP-17102
-mkdir tmp
+PTMP=tmp_${AWS_BATCH_JOB_ID}_${AWS_BATCH_JOB_ARRAY_INDEX}
+mkdir $PTMP
 
 echo SRA_ACCESSION is $SRA_ACCESSION
 
@@ -108,10 +109,10 @@ for virus in "${viruses[@]}"; do
   if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam  &> /dev/null; then
     echo output file already exists in S3, skipping....
   else
-    time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir tmp
+    time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir $PTMP
     time bowtie2 -p $NUM_CORES --no-unal -1 ${SRA_ACCESSION}_1.fastq.gz -2 ${SRA_ACCESSION}_2.fastq.gz -x /bt2/$virus | \
       pv -i 31 -f -N "bowtie2 $virus" | \
-      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam 
+      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam
   fi
 done
 
