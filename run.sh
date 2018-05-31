@@ -111,7 +111,7 @@ for virus in "${viruses[@]}"; do
     time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir tmp
     time bowtie2 -p $NUM_CORES --no-unal -1 ${SRA_ACCESSION}_1.fastq.gz -2 ${SRA_ACCESSION}_2.fastq.gz -x /bt2/$virus | \
       pv -i 31 -f -N "bowtie2 $virus" | \
-      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam )
+      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam 
   fi
 done
 
