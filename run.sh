@@ -59,7 +59,7 @@ else
 fi
 
 cd ~/ncbi/dbGaP-17102
-PTMP=tmp_${AWS_BATCH_JOB_ID}_${AWS_BATCH_JOB_ARRAY_INDEX}
+PTMP=tmp
 mkdir $PTMP
 
 echo SRA_ACCESSION is $SRA_ACCESSION
