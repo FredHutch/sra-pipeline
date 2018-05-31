@@ -15,7 +15,7 @@ set -x
 
 public_hostname=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname || true)
 echo public hostname for this container is $public_hostname
-container_id=$(cat /proc/self/cgroup | head -n 1 | cut -d '/' -f3)
+container_id=$(cat /proc/self/cgroup | head -n 1 | cut -d '/' -f4)
 echo container id is $container_id
 
 aws s3 cp $ACCESSION_LIST accessionlist.txt
