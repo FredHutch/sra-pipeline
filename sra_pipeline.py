@@ -108,7 +108,7 @@ def show_completed():
     "show completed accession numbers"
     s3 = boto3.client("s3") # pylint: disable=invalid-name
     completed_map = defaultdict(list)
-    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results-betaglobincds", MaxKeys=999)
+    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results-3controls", MaxKeys=999)
     while True:
         response = s3.list_objects_v2(**args)
         if not 'Contents' in response:
@@ -214,7 +214,10 @@ def get_latest_jobdef_revision(batch_client, jobdef_name): # FIXME handle pagina
                                             jobDefinitionName=jobdef_name)['jobDefinitions']
     if not results:
         raise ValueError("No job definition called {}.".format(jobdef_name))
-    return max(results, key=lambda x: x['revision'])['revision']
+    jobdef = max(results, key=lambda x: x['revision'])#['revision']
+    revision = jobdef['revision']
+    cpus = str(jobdef['containerProperties']['vcpus'])
+    return (revision, cpus,)
 
 def submit(num_rows, method, filename=None): # pylint: disable=too-many-locals
     """
@@ -241,10 +244,11 @@ def submit(num_rows, method, filename=None): # pylint: disable=too-many-locals
     url = "s3://fh-pi-jerome-k/sra-submission-manifests/{}".format(key)
     s3.upload_fileobj(bytesio, "fh-pi-jerome-k", "sra-submission-manifests/{}".format(key))
     job_name = "sra-pipeline-{}-{}-{}".format(os.getenv("USER"), nowstr, job_size)
-    env = to_aws_env(dict(BUCKET_NAME="fh-pi-jerome-k", PREFIX="pipeline-results-betaglobincds",
-                          ACCESSION_LIST=url))
     job_def_name = "sra-pipeline" # use "hello" for testing, "sra-pipeline" for production
-    jobdef = "{}:{}".format(job_def_name, get_latest_jobdef_revision(batch, job_def_name))
+    revision, cpus = get_latest_jobdef_revision(batch, job_def_name)
+    jobdef = "{}:{}".format(job_def_name, revision)
+    env = to_aws_env(dict(BUCKET_NAME="fh-pi-jerome-k", PREFIX="pipeline-results-3controls",
+                          ACCESSION_LIST=url, NUM_CORES=cpus))
     args = dict(jobName=job_name, jobQueue="mixed", jobDefinition=jobdef,
                 containerOverrides=dict(environment=env))
     if job_size > 1:
