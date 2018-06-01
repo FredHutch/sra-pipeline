@@ -60,7 +60,8 @@ fi
 
 cd ~/ncbi/dbGaP-17102
 PTMP=tmp
-mkdir $PTMP
+mkdir -p $PTMP
+rm -rf $PTMP/*
 
 echo SRA_ACCESSION is $SRA_ACCESSION
 
