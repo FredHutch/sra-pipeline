@@ -99,7 +99,7 @@ fastq_url=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/$SRA_ACCESSION.fastq.g
 
 # ( downloads to ~/ncbi/public/sra/)
 
-viruses=( betaglobincds gapdhpolyAtrimmed actinpolyAtrimmed )
+viruses=( hhv6a hhv6b hhv-7 betaglobincds actinpolyAtrimmed )
 
 echo starting pipeline...
 
