@@ -24,7 +24,7 @@ import pandas as pd
 
 # TODO change this if we have a different number of viruses
 # NUM_VIRUSES=3
-NUM_VIRUSES = 1
+NUM_VIRUSES = 5
 
 RETRY_EXCEPTIONS = ('ProvisionedThroughputExceededException',
                     'ThrottlingException')
