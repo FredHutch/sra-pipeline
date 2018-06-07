@@ -24,7 +24,7 @@ import pandas as pd
 
 # TODO change this if we have a different number of viruses
 # NUM_VIRUSES=3
-NUM_VIRUSES = 5
+NUM_VIRUSES = 1
 
 RETRY_EXCEPTIONS = ('ProvisionedThroughputExceededException',
                     'ThrottlingException')
@@ -108,7 +108,7 @@ def show_completed():
     "show completed accession numbers"
     s3 = boto3.client("s3") # pylint: disable=invalid-name
     completed_map = defaultdict(list)
-    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-results-0603", MaxKeys=999)
+    args = dict(Bucket="fh-pi-jerome-k", Prefix="pipeline-fastq", MaxKeys=999)
     while True:
         response = s3.list_objects_v2(**args)
         if not 'Contents' in response:
@@ -247,7 +247,7 @@ def submit(num_rows, method, filename=None): # pylint: disable=too-many-locals
     job_def_name = "sra-pipeline" # use "hello" for testing, "sra-pipeline" for production
     revision, cpus = get_latest_jobdef_revision(batch, job_def_name)
     jobdef = "{}:{}".format(job_def_name, revision)
-    env = to_aws_env(dict(BUCKET_NAME="fh-pi-jerome-k", PREFIX="pipeline-results-0603",
+    env = to_aws_env(dict(BUCKET_NAME="fh-pi-jerome-k", PREFIX="pipeline-fastq",
                           ACCESSION_LIST=url, NUM_CORES=cpus))
     args = dict(jobName=job_name, jobQueue="mixed", jobDefinition=jobdef,
                 containerOverrides=dict(environment=env))

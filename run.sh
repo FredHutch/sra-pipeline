@@ -91,7 +91,9 @@ else
   fi
 fi
 
-fastq_url=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/$SRA_ACCESSION.fastq.gz
+fastq_url1=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_1.fastq.gz
+fastq_url2=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_2.fastq.gz
+
 
 # echo streaming fastq-dump output to s3...
 #
@@ -107,28 +109,15 @@ echo starting pipeline...
 echo running fastq-dump
 time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir $PTMP
 
+aws s3 cp ${SRA_ACCESSION}_1.fastq.gz $fastq_url1
+aws s3 cp ${SRA_ACCESSION}_2.fastq.gz $fastq_url2
+
+
 echo "done with fastq-dump"
-
-for virus in "${viruses[@]}"; do
-# virus="betaglobincds"
-
-  echo processing $virus ...
-  if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam  &> /dev/null; then
-    echo output file already exists in S3, skipping....
-  else
-    time bowtie2 -p $NUM_CORES --no-unal -1 ${SRA_ACCESSION}_1.fastq.gz -2 ${SRA_ACCESSION}_2.fastq.gz -x /bt2/$virus | \
-      pv -i 31 -f -N "bowtie2 $virus" | \
-      aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam
-  fi
-done
-
-
 
 
 echo done with pipeline, cleaning up
 
-# echo removing fastq file from s3...
-# aws s3 rm $fastq_url
 
 echo removing scratch...
 
