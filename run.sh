@@ -67,9 +67,9 @@ echo SRA_ACCESSION is $SRA_ACCESSION
 
 echo scratch is $scratch
 
-
-echo get size of $SRA_ACCESSION ...
-prefetch -s $SRA_ACCESSION
+echo commented out prefetch -s
+# echo get size of $SRA_ACCESSION ...
+# prefetch -s $SRA_ACCESSION
 
 echo COMMENTED OUT SLEEP, remember to uncomment when we run prefetch again
 # interval=$(RANDOM=$$ shuf -i 0-60 -n 1)
@@ -77,20 +77,21 @@ echo COMMENTED OUT SLEEP, remember to uncomment when we run prefetch again
 
 # sleep ${interval}m
 
-echo downloading $SRA_ACCESSION from sra...
-if [ -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra ]; then
-  echo SRA file already exists, skipping download
-else
-  if prefetch --transport http --max-size 100000000000 $SRA_ACCESSION ; then
-    echo finished downloading, prefetch exited with result code 0
-  else
-    result=$?
-    echo prefetch exited with nonzero result code $result, cleaning up and exiting...
-    rm -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra
-    rm -f ~/ncbi/public/sra/* ~/ncbi/public/refseq/*
-    exit $result
-  fi
-fi
+echo commented out prefetch
+# echo downloading $SRA_ACCESSION from sra...
+# if [ -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra ]; then
+#   echo SRA file already exists, skipping download
+# else
+#   if prefetch --transport http --max-size 100000000000 $SRA_ACCESSION ; then
+#     echo finished downloading, prefetch exited with result code 0
+#   else
+#     result=$?
+#     echo prefetch exited with nonzero result code $result, cleaning up and exiting...
+#     rm -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra
+#     rm -f ~/ncbi/public/sra/* ~/ncbi/public/refseq/*
+#     exit $result
+#   fi
+# fi
 
 fastq_url=s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/$SRA_ACCESSION.fastq.gz
 
