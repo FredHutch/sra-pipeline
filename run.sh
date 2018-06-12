@@ -71,10 +71,11 @@ echo scratch is $scratch
 echo get size of $SRA_ACCESSION ...
 prefetch -s $SRA_ACCESSION
 
-interval=$(RANDOM=$$ shuf -i 0-60 -n 1)
-echo sleeping $interval minutes before download to avoid slamming SRA....
+echo COMMENTED OUT SLEEP, remember to uncomment when we run prefetch again
+# interval=$(RANDOM=$$ shuf -i 0-60 -n 1)
+# echo sleeping $interval minutes before download to avoid slamming SRA....
 
-sleep ${interval}m
+# sleep ${interval}m
 
 echo downloading $SRA_ACCESSION from sra...
 if [ -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra ]; then
