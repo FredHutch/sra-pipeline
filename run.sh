@@ -104,10 +104,12 @@ viruses=( hhv6a hhv6b hhv-7 gapdhpolyAtrimmed )
 echo starting pipeline...
 
 
-echo running fastq-dump
-time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir $PTMP
+echo getting fastqs from s3...
 
-echo "done with fastq-dump"
+aws s3 cp s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_1.fastq.gz .
+aws s3 cp s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_2.fastq.gz .
+
+
 
 for virus in "${viruses[@]}"; do
 # virus="betaglobincds"
