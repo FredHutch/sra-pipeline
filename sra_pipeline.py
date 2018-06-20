@@ -25,8 +25,8 @@ import pandas as pd
 # TODO change this if we have a different number of viruses
 # NUM_VIRUSES=3
 NUM_VIRUSES = 4
-PREFIX = "pipeline-sam-for-fastq-local"
-CSV_FILE = "fastq-sras.csv"
+PREFIX = "pipeline-salivary-local"
+CSV_FILE = "salivary_sizes.csv"
 
 RETRY_EXCEPTIONS = ("ProvisionedThroughputExceededException", "ThrottlingException")
 
