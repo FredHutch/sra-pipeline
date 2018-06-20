@@ -120,7 +120,7 @@ for virus in "${viruses[@]}"; do
   if aws s3api head-object --bucket $BUCKET_NAME --key $PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam  &> /dev/null; then
     echo output file already exists in S3, skipping....
   else
-    time bowtie2 -p $NUM_CORES --no-unal -1 ${SRA_ACCESSION}_1.fastq.gz -2 ${SRA_ACCESSION}_2.fastq.gz -x /bt2/$virus | \
+    time bowtie2 --local -p $NUM_CORES --no-unal -1 ${SRA_ACCESSION}_1.fastq.gz -2 ${SRA_ACCESSION}_2.fastq.gz -x /bt2/$virus | \
       pv -i 31 -f -N "bowtie2 $virus" | \
       aws s3 cp - s3://$BUCKET_NAME/$PREFIX/$SRA_ACCESSION/$virus/$SRA_ACCESSION.sam
   fi
