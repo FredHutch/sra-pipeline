@@ -25,7 +25,7 @@ import pandas as pd
 # TODO change this if we have a different number of viruses
 # NUM_VIRUSES=3
 NUM_VIRUSES = 4
-PREFIX = "pipeline-salivary-local"
+PREFIX = "pipeline-results"
 CSV_FILE = "salivary_sizes.csv"
 
 RETRY_EXCEPTIONS = ("ProvisionedThroughputExceededException", "ThrottlingException")
@@ -228,13 +228,16 @@ def get_latest_jobdef_revision(batch_client, jobdef_name):  # FIXME handle pagin
     return (revision, cpus)
 
 
-def submit(num_rows, method, filename=None):  # pylint: disable=too-many-locals
+def submit(
+    num_rows, method, filename=None, prefix=None
+):  # pylint: disable=too-many-locals
     """
     Utility function to submit jobs.
     Args:
         num_rows: Number of accession numbers to process, passed to select_from_csv()
         method: 'random', 'small' (passed to select_from_csv()), or 'filename'
         filename: list of accession numbers
+        prefix: optional s3 prefix at which to write output
     """
     s3 = boto3.client("s3")  # pylint: disable=invalid-name
     batch = boto3.client("batch")
@@ -260,10 +263,12 @@ def submit(num_rows, method, filename=None):  # pylint: disable=too-many-locals
     )  # use "hello" for testing, "sra-pipeline" for production
     revision, cpus = get_latest_jobdef_revision(batch, job_def_name)
     jobdef = "{}:{}".format(job_def_name, revision)
+    if not prefix:
+        prefix = PREFIX
     env = to_aws_env(
         dict(
             BUCKET_NAME="fh-pi-jerome-k",
-            PREFIX=PREFIX,
+            PREFIX=prefix,
             ACCESSION_LIST=url,
             NUM_CORES=cpus,
         )
@@ -292,14 +297,16 @@ def submit_random(num_jobs):
     return submit(num_jobs, "random")
 
 
-def submit_file(filename):
+def submit_file(filename, prefix=None):
     "submit accession numbers from filename"
-    return submit(0, "file", filename)
+    return submit(0, "file", filename, prefix)
 
 
 def main():
     "do the work"
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument(
         "-c",
         "--completed",
@@ -334,6 +341,14 @@ def main():
         metavar="FILE",
     )
     parser.add_argument(
+        "-p",
+        "--prefix",
+        help="override default prefix",
+        default=PREFIX,
+        type=str,
+        metavar="PREFIX",
+    )
+    parser.add_argument(
         "-q",
         "--query",
         help="string to search for in logs, must specify JOB_ID",
@@ -364,7 +379,7 @@ def main():
         result = submit_random(args.submit_random)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.submit_file:
-        result = submit_file(args.submit_file)
+        result = submit_file(args.submit_file, args.prefix)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.job_id:
         result = search_logs(args.job_id, args.query)
