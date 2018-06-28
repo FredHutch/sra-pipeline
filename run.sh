@@ -67,28 +67,28 @@ echo SRA_ACCESSION is $SRA_ACCESSION
 
 echo scratch is $scratch
 
-echo get size of $SRA_ACCESSION ...
-prefetch -s $SRA_ACCESSION
+# echo get size of $SRA_ACCESSION ...
+# prefetch -s $SRA_ACCESSION
 
-interval=$(RANDOM=$$ shuf -i 0-60 -n 1)
-echo sleeping $interval minutes before download to avoid slamming SRA....
+# interval=$(RANDOM=$$ shuf -i 0-60 -n 1)
+# echo sleeping $interval minutes before download to avoid slamming SRA....
 
-sleep ${interval}m
+# sleep ${interval}m
 
-echo downloading $SRA_ACCESSION from sra...
-if [ -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra ]; then
-  echo SRA file already exists, skipping download
-else
-  if prefetch --transport http --max-size 100000000000 $SRA_ACCESSION ; then
-    echo finished downloading, prefetch exited with result code 0
-  else
-    result=$?
-    echo prefetch exited with nonzero result code $result, cleaning up and exiting...
-    rm -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra
-    rm -f ~/ncbi/public/sra/* ~/ncbi/public/refseq/*
-    exit $result
-  fi
-fi
+# echo downloading $SRA_ACCESSION from sra...
+# if [ -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra ]; then
+#   echo SRA file already exists, skipping download
+# else
+#   if prefetch --transport http --max-size 100000000000 $SRA_ACCESSION ; then
+#     echo finished downloading, prefetch exited with result code 0
+#   else
+#     result=$?
+#     echo prefetch exited with nonzero result code $result, cleaning up and exiting...
+#     rm -f ~/ncbi/dbGaP-17102/sra/$SRA_ACCESSION.sra
+#     rm -f ~/ncbi/public/sra/* ~/ncbi/public/refseq/*
+#     exit $result
+#   fi
+# fi
 
 fastq_url=s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/$SRA_ACCESSION.fastq.gz
 
@@ -98,27 +98,37 @@ fastq_url=s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/$SRA_ACCESSIO
 
 # ( downloads to ~/ncbi/public/sra/)
 
-echo running fastq-dump
-time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir $PTMP
+# echo running fastq-dump
+# time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir $PTMP
 
-echo "done with fastq-dump, copying fastqs to s3"
+# echo "done with fastq-dump, copying fastqs to s3"
 
-aws s3 cp ${SRA_ACCESSION}_1.fastq.gz s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/
-aws s3 cp ${SRA_ACCESSION}_2.fastq.gz s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/
+# aws s3 cp ${SRA_ACCESSION}_1.fastq.gz s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/
+# aws s3 cp ${SRA_ACCESSION}_2.fastq.gz s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/
 
 
 
-viruses=( hhv6a hhv6b hhv-7 gapdhpolyAtrimmed )
+# viruses=( hhv6a hhv6b hhv-7 gapdhpolyAtrimmed )
+viruses=( hhv6a_u1102_untrimmed hhv6b_z29_untrimmed hhv-7 gapdhpolyAtrimmed )
+
 
 echo starting pipeline...
 
 
-# echo getting fastqs from s3...
+echo getting fastqs from s3...
 
 # aws s3 cp s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_1.fastq.gz .
 # aws s3 cp s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_2.fastq.gz .
 
+set +e
 
+aws s3 cp s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_1.fastq.gz .
+aws s3 cp s3://$BUCKET_NAME/pipeline-fastq/$SRA_ACCESSION/${SRA_ACCESSION}_2.fastq.gz .
+
+aws s3 cp s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/${SRA_ACCESSION}_1.fastq.gz .
+aws s3 cp s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/${SRA_ACCESSION}_2.fastq.gz .
+
+set -e
 
 for virus in "${viruses[@]}"; do
 # virus="betaglobincds"
