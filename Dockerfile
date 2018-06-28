@@ -30,7 +30,7 @@ ADD run.sh /
 
 RUN adduser --disabled-password --gecos "" neo
 
-RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
+# RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
 
 USER neo
 
