@@ -398,7 +398,7 @@ def main():
         result = submit_random(args.submit_random, args.references)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.submit_file:
-        result = submit_file(args.submit_file, args.prefix, args.references)
+        result = submit_file(args.submit_file, args.references, args.prefix)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.job_id:
         result = search_logs(args.job_id, args.query)
