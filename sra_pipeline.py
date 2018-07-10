@@ -229,7 +229,7 @@ def get_latest_jobdef_revision(batch_client, jobdef_name):  # FIXME handle pagin
 
 
 def submit(
-    num_rows, method, filename=None, prefix=None
+    num_rows, method, references, filename=None, prefix=None
 ):  # pylint: disable=too-many-locals
     """
     Utility function to submit jobs.
@@ -257,7 +257,10 @@ def submit(
     s3.upload_fileobj(
         bytesio, "fh-pi-jerome-k", "sra-submission-manifests/{}".format(key)
     )
-    job_name = "sra-pipeline-{}-{}-{}".format(os.getenv("USER"), nowstr, job_size)
+    reflen = len(references.split(","))
+    job_name = "sra-pipeline-{}-{}-{}-refs-{}".format(
+        os.getenv("USER"), nowstr, job_size, reflen
+    )
     job_def_name = (
         "sra-pipeline"
     )  # use "hello" for testing, "sra-pipeline" for production
@@ -271,6 +274,7 @@ def submit(
             PREFIX=prefix,
             ACCESSION_LIST=url,
             NUM_CORES=cpus,
+            REFERENCES=references,
         )
     )
     args = dict(
@@ -287,19 +291,19 @@ def submit(
     return res
 
 
-def submit_small(num_jobs):
+def submit_small(num_jobs, references):
     "submit <num_jobs> jobs of ascending size"
-    return submit(num_jobs, "small")
+    return submit(num_jobs, "small", references)
 
 
-def submit_random(num_jobs):
+def submit_random(num_jobs, references):
     "submit <num_jobs> randomly chosen jobs"
-    return submit(num_jobs, "random")
+    return submit(num_jobs, "random", references)
 
 
-def submit_file(filename, prefix=None):
+def submit_file(filename, references, prefix=None):
     "submit accession numbers from filename"
-    return submit(0, "file", filename, prefix)
+    return submit(0, "file", references, filename, prefix)
 
 
 def main():
@@ -359,8 +363,23 @@ def main():
     parser.add_argument(
         "job_id", nargs="?", help="a job ID to search the logs of (use with -q only)"
     )
+    parser.add_argument(
+        "-y",
+        "--references",
+        help="comma-separated list of references",
+        type=str,
+        metavar="REFERENCES",
+    )
 
     args = parser.parse_args()
+
+    if args.submit_small or args.submit_random or args.submit_file:
+        if not args.references:
+            print(
+                "You must supply a comma-separated list of references with the -y flag."
+            )
+            sys.exit(1)
+
     if len(sys.argv) == 1:
         print("invoke with --help to see usage information.")
         sys.exit(1)
@@ -373,13 +392,13 @@ def main():
         for item in in_progress:
             print(item)
     elif args.submit_small:
-        result = submit_small(args.submit_small)
+        result = submit_small(args.submit_small, args.references)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.submit_random:
-        result = submit_random(args.submit_random)
+        result = submit_random(args.submit_random, args.references)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.submit_file:
-        result = submit_file(args.submit_file, args.prefix)
+        result = submit_file(args.submit_file, args.prefix, args.references)
         print(json.dumps(result, sort_keys=True, indent=4))
     elif args.job_id:
         result = search_logs(args.job_id, args.query)

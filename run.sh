@@ -109,7 +109,8 @@ fastq_url=s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/$SRA_ACCESSIO
 
 
 # viruses=( hhv6a hhv6b hhv-7 gapdhpolyAtrimmed )
-viruses=( hhv6a_u1102_untrimmed hhv6b_z29_untrimmed hhv-7 gapdhpolyAtrimmed )
+viruses=$(echo $REFERENCES | tr "," "\n")
+# viruses=( hhv6a_u1102_untrimmed hhv6b_z29_untrimmed hhv-7 gapdhpolyAtrimmed )
 
 
 echo starting pipeline...
@@ -130,7 +131,8 @@ aws s3 cp s3://$BUCKET_NAME/pipeline-fastq-salivary/$SRA_ACCESSION/${SRA_ACCESSI
 
 set -e
 
-for virus in "${viruses[@]}"; do
+# for virus in "${viruses[@]}"; do
+for virus in $viruses; do
 # virus="betaglobincds"
 
   echo processing $virus ...
