@@ -1,4 +1,3 @@
-# build me as fredhutch/sra-pipeline
 
 FROM ubuntu:16.04
 
@@ -12,14 +11,14 @@ RUN tar zxf sratoolkit.2.9.0-ubuntu64.tar.gz
 
 RUN curl -LO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
-# ADD prj_17102.ngc /
-# RUN /sratoolkit.2.9.0-ubuntu64/bin/vdb-config --import prj_17102.ngc
+ADD prj_17102.ngc /
+RUN /sratoolkit.2.9.0-ubuntu64/bin/vdb-config --import prj_17102.ngc
 
 RUN curl -LO https://github.com/BenLangmead/bowtie2/releases/download/v2.3.4.1/bowtie2-2.3.4.1-linux-x86_64.zip
 
 RUN unzip bowtie2-2.3.4.1-linux-x86_64.zip
 
-RUN pip3 install awscli
+RUN pip3 install awscli requests sh
 
 ADD bt2/ /bt2/
 
@@ -30,7 +29,7 @@ ADD run.sh /
 
 RUN adduser --disabled-password --gecos "" neo
 
-# RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
+RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
 
 USER neo
 
@@ -48,11 +47,11 @@ RUN conda config --add channels defaults &&  conda config --add channels conda-f
 
 RUN conda install -y parallel-fastq-dump
 
-# RUN vdb-config --import /home/neo/prj_17102.ngc
+RUN vdb-config --import /home/neo/prj_17102.ngc
 
 RUN curl -LO https://download.asperasoft.com/download/sw/connect/3.7.4/aspera-connect-3.7.4.147727-linux-64.tar.gz
 RUN tar zxf aspera-connect-3.7.4.147727-linux-64.tar.gz
 RUN bash aspera-connect-3.7.4.147727-linux-64.sh
 
 
-CMD /run.sh
+CMD /usr/local/bin/python3 run.py

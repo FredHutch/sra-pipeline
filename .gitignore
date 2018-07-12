@@ -1,3 +1,5 @@
 prj_17102.ngc
 *.ngc
 cfg/
+.vscode/
+__pycache__/

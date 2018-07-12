@@ -17,6 +17,8 @@ wrapt = "==1.10.10"
 "boto3" = "*"
 numpy = "*"
 pandas = "*"
+sh = "*"
+requests = "*"
 
 
 [dev-packages]
