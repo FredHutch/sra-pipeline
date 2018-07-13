@@ -31,6 +31,15 @@ def working_directory(path):
         os.chdir(prev_cwd)
 
 
+def fprint(*args, **kwargs):
+    """
+    print and then flush stdout.
+    """
+    # TODO - print to log file as well?
+    print(*args, **kwargs)
+    sys.stdout.flush()
+
+
 def get_metadata():
     "get ec2 metadata if available"
     try:
@@ -66,7 +75,7 @@ def configure_aws():
 def ensure_correct_environment():
     "ensure correct environment"
     if not os.getenv("NUM_CORES"):
-        print("NUM_CORES is not set, exiting")
+        fprint("NUM_CORES is not set, exiting")
         sys.exit(1)
 
 
@@ -74,24 +83,24 @@ def setup_scratch():
     "sets up scratch, returns scratch dir and sra accession number"
     sh.aws("s3", "cp", os.getenv("ACCESSION_LIST"), "accessionlist.txt")
     if os.getenv("AWS_BATCH_JOB_ID"):
-        print("this is a batch job")
+        fprint("this is a batch job")
         sh.rm("-rf", "{}/ncbi".format(HOME))
         if os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"):
-            print("this is an array job")
+            fprint("this is an array job")
             line = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")) + 1
             sra_accession = sh.sed("{}q;d".format(line), "accessionlist.txt").strip()
             scratch = "/scratch/{}/{}/".format(
                 os.getenv("AWS_BATCH_JOB_ID"), os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")
             )
         else:
-            print("this is not an array job")
+            fprint("this is not an array job")
             sra_accession = sh.sed("1q;d", "accessionlist.txt").strip()
             scratch = "/scratch/{}/".format(os.getenv("AWS_BATCH_JOB_ID"))
         sh.mkdir("-p", scratch)
         sh.ln("-s", scratch, "{}/ncbi".format(HOME))
         sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
     else:
-        print("this is not an aws batch job")
+        fprint("this is not an aws batch job")
         sra_accession = sh.sed("1q;d", "accessionlist.txt").strip()
         scratch = "."
         sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
@@ -133,7 +142,7 @@ def object_exists_in_s3(key):
 
 def get_size_of_sra(sra_accession):
     "get size of sra"
-    print("size of {} is {}.".format(sra_accession, sh.prefetch("-s", sra_accession)))
+    fprint("size of {} is {}.".format(sra_accession, sh.prefetch("-s", sra_accession)))
 
 
 def download_from_sra(sra_accession):
@@ -141,15 +150,15 @@ def download_from_sra(sra_accession):
     get_size_of_sra(sra_accession)
     if not os.getenv("DISABLE_SLEEP"):
         minutes_to_sleep = random.randint(1, 60)
-        print(
+        fprint(
             "about to sleep for {} minutes to avoid slamming SRA".format(
                 minutes_to_sleep
             )
         )
         time.sleep(minutes_to_sleep * 60)
-    print("Downloading {} from sra...".format(sra_accession))
+    fprint("Downloading {} from sra...".format(sra_accession))
     if os.path.exists("{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession)):
-        print("SRA file already exists, skipping download")
+        fprint("SRA file already exists, skipping download")
     else:
         prefetch = sh.prefetch(
             "--transport",
@@ -160,12 +169,12 @@ def download_from_sra(sra_accession):
             _iter=True,
             _err_to_out=True,
         )
-        print("Beginning download...")
+        fprint("Beginning download...")
         for line in prefetch:
-            print(line)
+            fprint(line)
         prefetch_exit_code = prefetch.exit_code
         if prefetch_exit_code != 0:
-            print(
+            fprint(
                 "prefetch existed with nonzero result-code {}, cleaning up and exiting...".format(
                     prefetch_exit_code
                 )
@@ -179,7 +188,7 @@ def download_from_sra(sra_accession):
 
 def run_fastq_dump(sra_accession):
     "run fastq-dump"
-    print("running fastq-dump...")
+    fprint("running fastq-dump...")
 
     pfd = sh.parallel_fastq_dump(
         "--sra-id",
@@ -197,11 +206,11 @@ def run_fastq_dump(sra_accession):
     )
     start = datetime.datetime.now()
     for line in pfd:
-        print(line)
+        fprint(line)
 
     end = datetime.datetime.now()
 
-    print("duration of fastq-dump: {}".format(end - start))
+    fprint("duration of fastq-dump: {}".format(end - start))
 
 
 def copy_fastqs_to_s3(sra_accession):
@@ -253,13 +262,13 @@ def run_bowtie(sra_accession, read_handling="equal"):
         elif read_handling == 2:
             bowtie_args.extend(["-U", "{}_2.fastq.gz".format(sra_accession)])
 
-        print("processing virus {} ...".format(virus))
+        fprint("processing virus {} ...".format(virus))
         if object_exists_in_s3(
             "{}/{}/{}/{}.sam".format(
                 os.getenv("PREFIX"), sra_accession, virus, sra_accession
             )
         ):
-            print(
+            fprint(
                 "output sam file already exists in s3 for virus {}, skipping...".format(
                     virus
                 )
@@ -280,9 +289,9 @@ def run_bowtie(sra_accession, read_handling="equal"):
                 ),
                 _iter=True,
             ):
-                print(line)
+                fprint(line)
             end = datetime.datetime.now()
-            print("bowtie2 duration for {}: {}".format(virus, end - start))
+            fprint("bowtie2 duration for {}: {}".format(virus, end - start))
 
 
 def get_read_counts(sra_accession):
@@ -301,7 +310,7 @@ def get_read_counts(sra_accession):
 
 def cleanup(scratch):
     "clean up"
-    print("done with pipeline, cleaning up")
+    fprint("done with pipeline, cleaning up")
     if os.getenv("AWS_BATCH_JOB_ID"):
         sh.rm("-rf", scratch)
 
@@ -309,15 +318,15 @@ def cleanup(scratch):
 def main():
     "do the work"
     ensure_correct_environment()
-    print("public hostname for this container is {}".format(get_metadata()))
-    print("container_id is {}".format(get_container_id()))
+    fprint("public hostname for this container is {}".format(get_metadata()))
+    fprint("container_id is {}".format(get_container_id()))
     configure_aws()
     scratch, sra_accession = setup_scratch()
     with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
         sh.mkdir("-p", PTMP)
         sh.rm("-rf", glob.glob("{}/**".format(PTMP), recursive=True))
-        print("sra accession is {}".format(sra_accession))
-        print("scratch is {}".format(scratch))
+        fprint("sra accession is {}".format(sra_accession))
+        fprint("scratch is {}".format(scratch))
         if not get_fastq_files_from_s3(sra_accession):
             download_from_sra(sra_accession)
             run_fastq_dump(sra_accession)
