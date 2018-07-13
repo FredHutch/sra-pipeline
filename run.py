@@ -4,6 +4,7 @@
 
 import contextlib
 import datetime
+from functools import partial
 import glob
 import os
 import os.path
@@ -42,7 +43,6 @@ def get_metadata():
 
 def get_container_id():
     "get container id"
-    # container_id=$(cat /proc/self/cgroup | head -n 1 | cut -d '/' -f4)
     id_ = sh.cut(
         sh.head(sh.cat("/proc/self/cgroup"), "-n", "1"), "-d", "/", "-f4"
     ).strip()
@@ -178,8 +178,6 @@ def run_fastq_dump(sra_accession):
     "run fastq-dump"
     print("running fastq-dump...")
 
-    # echo running fastq-dump
-    # time parallel-fastq-dump --sra-id sra/$SRA_ACCESSION.sra --threads $NUM_CORES --outdir . --gzip --split-files -W -I --tmpdir $PTMP
     pfd = sh.parallel_fastq_dump(
         "--sra-id",
         "sra/{}.sra".format(sra_accession),
@@ -205,7 +203,104 @@ def run_fastq_dump(sra_accession):
 
 def copy_fastqs_to_s3(sra_accession):
     "copy fastqs to s3"
-    pass
+    for i in range(1, 3):
+        sh.aws(
+            "s3",
+            "cp",
+            "{}/_{}.fastq.gz".format(sra_accession, i),
+            "s3://{}/pipeline-fastq/{}/".format(
+                os.getenv("BUCKET_NAME"), sra_accession
+            ),
+        )
+
+
+def run_bowtie(sra_accession, read_handling="equal"):
+    """
+    run bowtie2
+    sra_accession - sra accession
+    read_handling - if both fastq files are of equal length
+                    (indicated by value "equal", the default),
+                    then both fastq files are used. If value is
+                    1 or 2, then the given single fastq file is used.
+    """
+    viruses = os.getenv("REFERENCES").split(",")
+    viruses = [x.strip() for x in viruses]
+    bowtie2 = partial(sh.bowtie2, _piped=True)
+
+    for virus in viruses:
+        bowtie_args = [
+            "--local",
+            "--p",
+            os.getenv("NUM_CORES"),
+            "--no-unal",
+            "-x",
+            "/bt2/{}".format(virus),
+        ]
+        if read_handling == "equal":
+            bowtie_args.extend(
+                [
+                    "-1",
+                    "{}_1.fastq.gz".format(sra_accession),
+                    "-2",
+                    "{}_2.fastq.gz".format(sra_accession),
+                ]
+            )
+        elif read_handling == 1:
+            bowtie_args.extend(["-U", "{}_1.fastq.gz".format(sra_accession)])
+        elif read_handling == 2:
+            bowtie_args.extend(["-U", "{}_2.fastq.gz".format(sra_accession)])
+
+        print("processing virus {} ...".format(virus))
+        if object_exists_in_s3(
+            "{}/{}/{}/{}.sam".format(
+                os.getenv("PREFIX"), sra_accession, virus, sra_accession
+            )
+        ):
+            print(
+                "output sam file already exists in s3 for virus {}, skipping...".format(
+                    virus
+                )
+            )
+        else:
+            start = datetime.datetime.now()
+            for line in sh.aws(
+                bowtie2(*bowtie_args),
+                "s3",
+                "cp",
+                "-",
+                "s3://{}/{}/{}/{}/{}.sam".format(
+                    os.getenv("BUCKET_NAME"),
+                    os.getenv("PREFIX"),
+                    sra_accession,
+                    virus,
+                    sra_accession,
+                ),
+                _iter=True,
+            ):
+                print(line)
+            end = datetime.datetime.now()
+            print("bowtie2 duration for {}: {}".format(virus, end - start))
+
+
+def get_read_counts(sra_accession):
+    "return read counts for fastq files 1 and 2"
+    results = []
+    for i in range(1, 3):
+        result = int(
+            sh.awk(
+                sh.zcat("{}_{}.fastq.gz".format(sra_accession, i)),
+                "s{++}END{print s/4}",
+            ).strip()
+        )
+        results.append(result)
+    return results[0], results[1]
+
+
+def cleanup(scratch):
+    "clean up"
+    print("done with pipeline, cleaning up")
+    if os.getenv("AWS_BATCH_JOB_ID"):
+        sh.rm("-rf", scratch)
 
 
 def main():
@@ -225,7 +320,15 @@ def main():
         run_fastq_dump(sra_accession)
         copy_fastqs_to_s3(sra_accession)
 
-    # run bowtie2 - stream to s3
+    rc1, rc2 = get_read_counts(sra_accession)
+    if rc1 == rc2:
+        run_bowtie(sra_accession)
+    elif rc1 > rc2:
+        run_bowtie(sra_accession, 1)
+    elif rc2 > rc1:
+        run_bowtie(sra_accession, 2)
+
+    cleanup(scratch)
 
 
 if __name__ == "__main__":
