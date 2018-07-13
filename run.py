@@ -233,7 +233,7 @@ def copy_fastqs_to_s3(sra_accession):
         sh.aws(
             "s3",
             "cp",
-            "{}/_{}.fastq.gz".format(sra_accession, i),
+            "{}_{}.fastq.gz".format(sra_accession, i),
             "s3://{}/pipeline-fastq/{}/".format(
                 os.getenv("BUCKET_NAME"), sra_accession
             ),
