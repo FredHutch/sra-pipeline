@@ -54,4 +54,4 @@ RUN tar zxf aspera-connect-3.7.4.147727-linux-64.tar.gz
 RUN bash aspera-connect-3.7.4.147727-linux-64.sh
 
 
-CMD /usr/bin/python3 run.py
+CMD /usr/bin/python3 /run.py
