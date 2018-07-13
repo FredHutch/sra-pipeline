@@ -268,15 +268,16 @@ def submit(
     jobdef = "{}:{}".format(job_def_name, revision)
     if not prefix:
         prefix = PREFIX
-    env = to_aws_env(
-        dict(
-            BUCKET_NAME="fh-pi-jerome-k",
-            PREFIX=prefix,
-            ACCESSION_LIST=url,
-            NUM_CORES=cpus,
-            REFERENCES=references,
-        )
+    raw_env = dict(
+        BUCKET_NAME="fh-pi-jerome-k",
+        PREFIX=prefix,
+        ACCESSION_LIST=url,
+        NUM_CORES=cpus,
+        REFERENCES=references,
     )
+    if os.getenv("DISABLE_SLEEP"):
+        raw_env["DISABLE_SLEEP"] = "True"
+    env = to_aws_env(raw_env)
     args = dict(
         jobName=job_name,
         jobQueue="mixed",

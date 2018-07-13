@@ -24,7 +24,7 @@ ADD bt2/ /bt2/
 
 RUN chmod -R a+r /bt2
 
-ADD run.sh /
+ADD run.py /
 
 
 RUN adduser --disabled-password --gecos "" neo

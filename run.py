@@ -139,11 +139,14 @@ def get_size_of_sra(sra_accession):
 def download_from_sra(sra_accession):
     "download from sra"
     get_size_of_sra(sra_accession)
-    minutes_to_sleep = random.randint(1, 60)
-    print(
-        "about to sleep for {} minutes to avoid slamming SRA".format(minutes_to_sleep)
-    )
-    time.sleep(minutes_to_sleep * 60)
+    if not os.getenv("DISABLE_SLEEP"):
+        minutes_to_sleep = random.randint(1, 60)
+        print(
+            "about to sleep for {} minutes to avoid slamming SRA".format(
+                minutes_to_sleep
+            )
+        )
+        time.sleep(minutes_to_sleep * 60)
     print("Downloading {} from sra...".format(sra_accession))
     if os.path.exists("{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession)):
         print("SRA file already exists, skipping download")
