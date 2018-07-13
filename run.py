@@ -172,8 +172,8 @@ def download_from_sra(sra_accession):
             )
             sh.rm("-rf", "{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession))
             for item in ["sra", "refseq"]:
-                path = "{}/ncbi/public/{}/*".format(HOME, item)
-                sh.rm("-rf", glob.glob(path, True))
+                path = "{}/ncbi/public/{}/**".format(HOME, item)
+                sh.rm("-rf", glob.glob(path, recursive=True))
             sys.exit(prefetch_exit_code)
 
 
@@ -315,7 +315,7 @@ def main():
     scratch, sra_accession = setup_scratch()
     with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
         sh.mkdir("-p", PTMP)
-        sh.rm("-rf", glob.glob("{}/*".format(PTMP), True))
+        sh.rm("-rf", glob.glob("{}/**".format(PTMP), recursive=True))
         print("sra accession is {}".format(sra_accession))
         print("scratch is {}".format(scratch))
         if not get_fastq_files_from_s3(sra_accession):
