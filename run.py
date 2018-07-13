@@ -36,7 +36,7 @@ def get_metadata():
     try:
         return requests.get(
             "http://169.254.169.254/latest/meta-data/public-hostname", timeout=1
-        )
+        ).text.strip()
     except requests.exceptions.Timeout:
         return "unknown"
 
@@ -166,14 +166,14 @@ def download_from_sra(sra_accession):
         prefetch_exit_code = prefetch.exit_code
         if prefetch_exit_code != 0:
             print(
-                "prefetch existed with nonzero result-code {}, cleaning up and existing...".format(
+                "prefetch existed with nonzero result-code {}, cleaning up and exiting...".format(
                     prefetch_exit_code
                 )
             )
             sh.rm("-rf", "{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession))
             for item in ["sra", "refseq"]:
                 path = "{}/ncbi/public/{}/*".format(HOME, item)
-                sh.rm("-rf", glob.glob(path))
+                sh.rm("-rf", glob.glob(path, True))
             sys.exit(prefetch_exit_code)
 
 
@@ -310,28 +310,28 @@ def main():
     "do the work"
     ensure_correct_environment()
     print("public hostname for this container is {}".format(get_metadata()))
-    print("container_id is {}".format(get_container_id))
+    print("container_id is {}".format(get_container_id()))
     configure_aws()
     scratch, sra_accession = setup_scratch()
     with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
         sh.mkdir("-p", PTMP)
-        sh.rm("-rf", glob.glob("{}/*".format(PTMP)))
+        sh.rm("-rf", glob.glob("{}/*".format(PTMP), True))
         print("sra accession is {}".format(sra_accession))
         print("scratch is {}".format(scratch))
-    if not get_fastq_files_from_s3(sra_accession):
-        download_from_sra(sra_accession)
-        run_fastq_dump(sra_accession)
-        copy_fastqs_to_s3(sra_accession)
+        if not get_fastq_files_from_s3(sra_accession):
+            download_from_sra(sra_accession)
+            run_fastq_dump(sra_accession)
+            copy_fastqs_to_s3(sra_accession)
 
-    rc1, rc2 = get_read_counts(sra_accession)
-    if rc1 == rc2:
-        run_bowtie(sra_accession)
-    elif rc1 > rc2:
-        run_bowtie(sra_accession, 1)
-    elif rc2 > rc1:
-        run_bowtie(sra_accession, 2)
+        rc1, rc2 = get_read_counts(sra_accession)
+        if rc1 == rc2:
+            run_bowtie(sra_accession)
+        elif rc1 > rc2:
+            run_bowtie(sra_accession, 1)
+        elif rc2 > rc1:
+            run_bowtie(sra_accession, 2)
 
-    cleanup(scratch)
+        cleanup(scratch)
 
 
 if __name__ == "__main__":
