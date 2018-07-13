@@ -4,7 +4,17 @@ FROM ubuntu:16.04
 RUN apt-get update -y
 
 
-RUN apt-get update -y && apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv python3-pip
+RUN apt-get update -y && apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv software-properties-common python-software-properties
+
+RUN add-apt-repository ppa:jonathonf/python-3.6 -y
+
+RUN apt-get update -y
+
+RUN apt-get install -y python3.6
+
+RUN curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+
+RUN python3.6 /tmp/get-pip.py
 
 RUN  curl -LO http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.0/sratoolkit.2.9.0-ubuntu64.tar.gz
 RUN tar zxf sratoolkit.2.9.0-ubuntu64.tar.gz
@@ -18,7 +28,7 @@ RUN curl -LO https://github.com/BenLangmead/bowtie2/releases/download/v2.3.4.1/b
 
 RUN unzip bowtie2-2.3.4.1-linux-x86_64.zip
 
-RUN pip3 install awscli requests sh
+RUN pip3.6 install awscli requests sh
 
 ADD bt2/ /bt2/
 
@@ -54,4 +64,4 @@ RUN tar zxf aspera-connect-3.7.4.147727-linux-64.tar.gz
 RUN bash aspera-connect-3.7.4.147727-linux-64.sh
 
 
-CMD /usr/bin/python3 /run.py
+CMD /usr/bin/python3.6 /run.py
