@@ -20,6 +20,23 @@ HOME = os.getenv("HOME")
 PTMP = "tmp"
 
 
+class Timer:
+    "tweaked from http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/"
+
+    def __init__(self):
+        self.start = None
+        self.end = None
+        self.interval = None
+
+    def __enter__(self):
+        self.start = datetime.datetime.now()
+        return self
+
+    def __exit__(self, *args):
+        self.end = datetime.datetime.now()
+        self.interval = self.end - self.start
+
+
 @contextlib.contextmanager
 def working_directory(path):
     """Changes working directory and returns to previous on exit."""
@@ -203,13 +220,11 @@ def run_fastq_dump(sra_accession):
         _iter=True,
         _err_to_out=True,
     )
-    start = datetime.datetime.now()
-    for line in pfd:
-        fprint(line)
+    with Timer() as timer:
+        for line in pfd:
+            fprint(line)
 
-    end = datetime.datetime.now()
-
-    fprint("duration of fastq-dump: {}".format(end - start))
+    fprint("duration of fastq-dump: {}".format(timer.interval))
 
 
 def copy_fastqs_to_s3(sra_accession):
@@ -273,24 +288,23 @@ def run_bowtie(sra_accession, read_handling="equal"):
                 )
             )
         else:
-            start = datetime.datetime.now()
-            for line in sh.aws(
-                bowtie2(*bowtie_args),
-                "s3",
-                "cp",
-                "-",
-                "s3://{}/{}/{}/{}/{}.sam".format(
-                    os.getenv("BUCKET_NAME"),
-                    os.getenv("PREFIX"),
-                    sra_accession,
-                    virus,
-                    sra_accession,
-                ),
-                _iter=True,
-            ):
-                fprint(line)
-            end = datetime.datetime.now()
-            fprint("bowtie2 duration for {}: {}".format(virus, end - start))
+            with Timer() as timer:
+                for line in sh.aws(
+                    bowtie2(*bowtie_args),
+                    "s3",
+                    "cp",
+                    "-",
+                    "s3://{}/{}/{}/{}/{}.sam".format(
+                        os.getenv("BUCKET_NAME"),
+                        os.getenv("PREFIX"),
+                        sra_accession,
+                        virus,
+                        sra_accession,
+                    ),
+                    _iter=True,
+                ):
+                    fprint(line)
+            fprint("bowtie2 duration for {}: {}".format(virus, timer.interval))
 
 
 def get_read_counts(sra_accession):
