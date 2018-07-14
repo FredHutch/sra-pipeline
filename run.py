@@ -314,7 +314,7 @@ def get_read_counts(sra_accession):
         result = int(
             sh.awk(
                 sh.zcat("{}_{}.fastq.gz".format(sra_accession, i)),
-                "s{++}END{print s/4}",
+                "s{++}END{print s/4}", _piped=True
             ).strip()
         )
         results.append(result)
