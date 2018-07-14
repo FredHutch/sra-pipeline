@@ -143,8 +143,8 @@ def get_fastq_files_from_s3(sra_accession):
                     found_one = True
                 else:
                     found_two = True
-    if found_one and found_two:
-        return True
+        if found_one and found_two:
+            return True
     return False
 
 
