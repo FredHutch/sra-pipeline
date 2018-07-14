@@ -137,6 +137,7 @@ def get_fastq_files_from_s3(sra_accession):
         for num in ["1", "2"]:
             key = "{}/{}/{}_{}.fastq.gz".format(dir_, sra_accession, sra_accession, num)
             if object_exists_in_s3(key):
+                fprint("Downloading {}_{}.fastq.gz....".format(sra_accession, num))
                 sh.aws("s3", "cp", "s3://{}/{}".format(bucket, key), ".")
                 if num == "1":
                     found_one = True
@@ -258,7 +259,7 @@ def run_bowtie(sra_accession, read_handling="equal"):
     for virus in viruses:
         bowtie_args = [
             "--local",
-            "--p",
+            "-p",
             os.getenv("NUM_CORES"),
             "--no-unal",
             "-x",
