@@ -150,7 +150,9 @@ def get_fastq_files_from_s3(sra_accession):
 def object_exists_in_s3(key):
     "check if object exists in S3"
     try:
-        sh.aws("s3api", "head-object", "--bucket", "fh-div-adm-scicomp", "--key", key)
+        sh.aws(
+            "s3api", "head-object", "--bucket", os.getenv("BUCKET_NAME"), "--key", key
+        )
         return True
     except sh.ErrorReturnCode_255:
         return False
@@ -314,7 +316,8 @@ def get_read_counts(sra_accession):
         result = int(
             sh.awk(
                 sh.zcat("{}_{}.fastq.gz".format(sra_accession, i)),
-                "s{++}END{print s/4}", _piped=True
+                "s{++}END{print s/4}",
+                _piped=True,
             ).strip()
         )
         results.append(result)
