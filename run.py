@@ -137,7 +137,7 @@ def get_fastq_files_from_s3(sra_accession):
         for num in ["1", "2"]:
             key = "{}/{}/{}_{}.fastq.gz".format(dir_, sra_accession, sra_accession, num)
             if object_exists_in_s3(key):
-                sh.aws("cp", "s3://{}/{}".format(bucket, key), ".")
+                sh.aws("s3", "cp", "s3://{}/{}".format(bucket, key), ".")
                 if num == "1":
                     found_one = True
                 else:
