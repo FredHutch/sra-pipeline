@@ -359,14 +359,14 @@ def main():
             run_fastq_dump(sra_accession)
             copy_fastqs_to_s3(sra_accession)
 
-        rc1, rc2 = get_read_counts(sra_accession)
-        if rc1 == rc2:
-            run_bowtie(sra_accession)
-        elif rc1 > rc2:
-            run_bowtie(sra_accession, 1)
-        elif rc2 > rc1:
-            run_bowtie(sra_accession, 2)
-
+        # rc1, rc2 = get_read_counts(sra_accession)
+        # if rc1 == rc2:
+        #     run_bowtie(sra_accession)
+        # elif rc1 > rc2:
+        #     run_bowtie(sra_accession, 1)
+        # elif rc2 > rc1:
+        #     run_bowtie(sra_accession, 2)
+        run_bowtie(sra_accession)
         cleanup(scratch)
 
 
