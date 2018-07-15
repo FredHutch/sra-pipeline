@@ -363,6 +363,14 @@ def main():
         try:
             run_bowtie(sra_accession)
         except sh.ErrorReturnCode_134 as exc:
+            sh.aws(
+                "s3",
+                "rm",
+                "s3://{}/{}/{}/".format(
+                    os.getenv("BUCKET_NAME"), os.getenv("PREFIX"), sra_accession
+                ),
+                "--recursive",
+            )
             errtxt = str(exc)
             if "fewer reads in file specified with -2" in errtxt:
                 fprint(
