@@ -317,7 +317,7 @@ def get_read_counts(sra_accession):
         result = int(
             sh.awk(
                 sh.zcat("{}_{}.fastq.gz".format(sra_accession, i)),
-                '{s++}END{print s/4}',
+                "{s++}END{print s/4}",
                 _piped=True,
             ).strip()
         )
@@ -360,14 +360,20 @@ def main():
             run_fastq_dump(sra_accession)
             copy_fastqs_to_s3(sra_accession)
 
-        # rc1, rc2 = get_read_counts(sra_accession)
-        # if rc1 == rc2:
-        #     run_bowtie(sra_accession)
-        # elif rc1 > rc2:
-        #     run_bowtie(sra_accession, 1)
-        # elif rc2 > rc1:
-        #     run_bowtie(sra_accession, 2)
-        run_bowtie(sra_accession)
+        try:
+            run_bowtie(sra_accession)
+        except sh.ErrorReturnCode_134 as exc:
+            errtxt = str(exc)
+            if "fewer reads in file specified with -2" in errtxt:
+                fprint(
+                    "Oops, -2 file has fewer reads than -1 file, trying again with -1 only"
+                )
+                run_bowtie(sra_accession, 1)
+            elif "fewer reads in file specified with -1" in errtxt:
+                fprint(
+                    "Oops, -1 file has fewer reads than -2 file, trying again with -2 only"
+                )
+                run_bowtie(sra_accession, 2)
         cleanup(scratch)
 
 
