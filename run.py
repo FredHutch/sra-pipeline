@@ -254,7 +254,7 @@ def run_bowtie(sra_accession, read_handling="equal"):
     """
     viruses = os.getenv("REFERENCES").split(",")
     viruses = [x.strip() for x in viruses]
-    bowtie2 = partial(sh.bowtie2, _piped=True)
+    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False)
 
     for virus in viruses:
         bowtie_args = [
