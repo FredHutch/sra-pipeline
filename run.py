@@ -12,6 +12,7 @@ from pathlib import Path
 import random
 import sys
 import time
+import traceback
 
 import sh
 import requests
@@ -385,7 +386,8 @@ def main():
                 )
                 run_bowtie(sra_accession, 2)
         except:  # pylint: disable=bare-except
-            fprint("Unexpected error:", sys.exc_info())
+            fprint("Unexpected exception:")
+            fprint(traceback.print_exception(*sys.exc_info()))
         cleanup(scratch)
 
 
