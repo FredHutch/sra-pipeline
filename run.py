@@ -20,7 +20,7 @@ HOME = os.getenv("HOME")
 PTMP = "tmp"
 
 
-class Timer:
+class Timer:  # pylint: disable=too-few-public-methods
     "tweaked from http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/"
 
     def __init__(self):
@@ -139,7 +139,9 @@ def get_fastq_files_from_s3(sra_accession):
             if object_exists_in_s3(key):
                 fprint("Downloading {}_{}.fastq.gz....".format(sra_accession, num))
                 sh.aws("s3", "cp", "s3://{}/{}".format(bucket, key), ".")
-                if num == "1":
+                # false positive below:
+                # https://github.com/PyCQA/pylint/issues/837#issuecomment-255109936
+                if num == "1":  # pylint: disable=simplifiable-if-statement
                     found_one = True
                 else:
                     found_two = True
@@ -382,6 +384,8 @@ def main():
                     "Oops, -1 file has fewer reads than -2 file, trying again with -2 only"
                 )
                 run_bowtie(sra_accession, 2)
+        except:  # pylint: disable=bare-except
+            fprint("Unexpected error:", sys.exc_info())
         cleanup(scratch)
 
 
