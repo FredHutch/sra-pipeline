@@ -64,4 +64,8 @@ RUN tar zxf aspera-connect-3.7.4.147727-linux-64.tar.gz
 RUN bash aspera-connect-3.7.4.147727-linux-64.sh
 
 
-CMD /usr/bin/python3.6 /run.py
+RUN curl -L https://raw.githubusercontent.com/FredHutch/url-fetch-and-run/master/fetch-and-run/fetch_and_run.sh > /usr/local/bin/fetch_and_run.sh
+
+RUN chmod +x /usr/local/bin/fetch_and_run.sh
+
+ENTRYPOINT ["/usr/local/bin/fetch_and_run.sh"]

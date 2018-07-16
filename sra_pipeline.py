@@ -31,6 +31,23 @@ CSV_FILE = "salivary_sizes.csv"
 RETRY_EXCEPTIONS = ("ProvisionedThroughputExceededException", "ThrottlingException")
 
 
+def get_git_branch():
+    "get the current git branch"
+    headfile = os.path.join(get_script_directory(), ".git", "HEAD")
+    with open(headfile) as filehandle:
+        lines = filehandle.readlines()
+    headline = [x.strip() for x in lines if x.startswith("ref:")]
+    if not headline:
+        return None
+    return headline[0].replace("ref: refs/heads/", "")
+
+
+def get_script_directory():
+    "get full path to directory the running script is in"
+    pathname = os.path.dirname(sys.argv[0])
+    return os.path.abspath(pathname)
+
+
 def inspect_logs(args):  # index, batch, logs, job_id, search_string):
     "parallelizable(?) function to look at logs for a single child"
     index = args["index"]
@@ -269,6 +286,10 @@ def submit(
     if not prefix:
         prefix = PREFIX
     raw_env = dict(
+        BATCH_FILE_TYPE="script",
+        BATCH_FILE_URL="https://raw.githubusercontent.com/FredHutch/sra-pipeline/{}/run.py".format(
+            get_git_branch()
+        ),
         BUCKET_NAME="fh-pi-jerome-k",
         PREFIX=prefix,
         ACCESSION_LIST=url,
