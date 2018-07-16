@@ -257,7 +257,8 @@ def run_bowtie(sra_accession, read_handling="equal"):
     """
     viruses = os.getenv("REFERENCES").split(",")
     viruses = [x.strip() for x in viruses]
-    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False)
+    cmd = sh.Command("/bowtie2-2.3.4.1-linux-x86_64//bowtie2")
+    bowtie2 = partial(cmd, _piped=True, _bg_exc=False)
 
     for virus in viruses:
         bowtie_args = [
@@ -388,6 +389,7 @@ def main():
         except:  # pylint: disable=bare-except
             fprint("Unexpected exception:")
             fprint(traceback.print_exception(*sys.exc_info()))
+            sys.exit(1)
         cleanup(scratch)
 
 
