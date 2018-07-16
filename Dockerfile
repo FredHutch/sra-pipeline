@@ -41,6 +41,10 @@ RUN adduser --disabled-password --gecos "" neo
 
 RUN cp /*.ngc /home/neo/ && chown neo /home/neo/*.ngc
 
+RUN curl -L https://raw.githubusercontent.com/FredHutch/url-fetch-and-run/master/fetch-and-run/fetch_and_run.sh > /usr/local/bin/fetch_and_run.sh
+
+RUN chmod a+x /usr/local/bin/fetch_and_run.sh
+
 USER neo
 
 ENV PATH="${PATH}:/bowtie2-2.3.4.1-linux-x86_64/:/sratoolkit.2.9.0-ubuntu64/bin/"
@@ -64,8 +68,5 @@ RUN tar zxf aspera-connect-3.7.4.147727-linux-64.tar.gz
 RUN bash aspera-connect-3.7.4.147727-linux-64.sh
 
 
-RUN curl -L https://raw.githubusercontent.com/FredHutch/url-fetch-and-run/master/fetch-and-run/fetch_and_run.sh > /usr/local/bin/fetch_and_run.sh
-
-RUN chmod +x /usr/local/bin/fetch_and_run.sh
 
 ENTRYPOINT ["/usr/local/bin/fetch_and_run.sh"]
