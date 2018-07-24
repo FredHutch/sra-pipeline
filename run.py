@@ -165,7 +165,8 @@ def object_exists_in_s3(key):
 
 def get_size_of_sra(sra_accession):
     "get size of sra"
-    fprint("size of {} is {}.".format(sra_accession, sh.prefetch("-s", sra_accession)))
+    prefetch = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
+    fprint("size of {} is {}.".format(sra_accession, prefetch("-s", sra_accession)))
 
 
 def download_from_sra(sra_accession):
@@ -183,7 +184,8 @@ def download_from_sra(sra_accession):
     if os.path.exists("{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession)):
         fprint("SRA file already exists, skipping download")
     else:
-        prefetch = sh.prefetch(
+        prefetch_cmd = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
+        prefetch = prefetch_cmd(
             "--transport",
             "http",
             "--max-size",
