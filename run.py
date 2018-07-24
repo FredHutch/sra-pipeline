@@ -165,8 +165,8 @@ def object_exists_in_s3(key):
 
 def get_size_of_sra(sra_accession):
     "get size of sra"
-    prefetch = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
-    fprint("size of {} is {}.".format(sra_accession, prefetch("-s", sra_accession)))
+    # prefetch = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
+    fprint("size of {} is {}.".format(sra_accession, sh.prefetch("-s", sra_accession)))
 
 
 def download_from_sra(sra_accession):
@@ -184,8 +184,8 @@ def download_from_sra(sra_accession):
     if os.path.exists("{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession)):
         fprint("SRA file already exists, skipping download")
     else:
-        prefetch_cmd = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
-        prefetch = prefetch_cmd(
+        # prefetch_cmd = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
+        prefetch = sh.prefetch(
             "--transport",
             "http",
             "--max-size",
@@ -214,8 +214,8 @@ def run_fastq_dump(sra_accession):
     "run fastq-dump"
     fprint("running fastq-dump...")
 
-    pfd0 = sh.Command("/home/neo/miniconda3/bin/parallel-fastq-dump")
-    pfd = pfd0(
+    # pfd0 = sh.Command("/home/neo/miniconda3/bin/parallel-fastq-dump")
+    pfd = sh.parallel_fastq_dump(
         "--sra-id",
         "sra/{}.sra".format(sra_accession),
         "--threads",
@@ -260,8 +260,8 @@ def run_bowtie(sra_accession, read_handling="equal"):
     """
     viruses = os.getenv("REFERENCES").split(",")
     viruses = [x.strip() for x in viruses]
-    cmd = sh.Command("/bowtie2-2.3.4.1-linux-x86_64//bowtie2")
-    bowtie2 = partial(cmd, _piped=True, _bg_exc=False)
+    # cmd = sh.Command("/bowtie2-2.3.4.1-linux-x86_64//bowtie2")
+    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False)
 
     for virus in viruses:
         bowtie_args = [
@@ -350,9 +350,22 @@ def clean_directory(dirname):
     sh.rm("-rf", globb)
 
 
+def add_to_path(directory):
+    """
+    add a directory to the PATH since the script seems to forget
+    what's in the PATH sometimes.
+    """
+    path = "{}:{}".format(os.getenv("PATH"), directory)
+    os.environ["PATH"] = path
+    print("Added {} to PATH.".format(directory))
+
+
 def main():
     "do the work"
     ensure_correct_environment()
+    add_to_path("/home/neo/miniconda3/bin")
+    add_to_path("/bowtie2-2.3.4.1-linux-x86_64")
+    add_to_path("/sratoolkit.2.9.0-ubuntu64/bin")
     fprint("public hostname for this container is {}".format(get_metadata()))
     fprint("container_id is {}".format(get_container_id()))
     configure_aws()
