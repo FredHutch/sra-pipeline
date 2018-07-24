@@ -214,7 +214,8 @@ def run_fastq_dump(sra_accession):
     "run fastq-dump"
     fprint("running fastq-dump...")
 
-    pfd = sh.parallel_fastq_dump(
+    pfd0 = sh.Command("/home/neo/miniconda3/bin/parallel-fastq-dump")
+    pfd = pfd0(
         "--sra-id",
         "sra/{}.sra".format(sra_accession),
         "--threads",
