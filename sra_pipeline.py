@@ -20,11 +20,8 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import ClientError
 import numpy as np
-import pandas as pd
+# import pandas as pd
 
-# TODO change this if we have a different number of viruses
-# NUM_VIRUSES=3
-NUM_VIRUSES = 4
 PREFIX = "pipeline-results"
 CSV_FILE = "salivary_sizes.csv"
 
@@ -123,11 +120,31 @@ def get_failsons(batch, job_id):
     return set(failsons)
 
 
-def show_completed():
+def get_env_var(job, env_var):
+    "get the value of a specified environment variable from a job description"
+    hsh = {}
+    for item in job["container"]["environment"]:
+        hsh[item["name"]] = item["value"]
+    return hsh[env_var]
+
+
+def show_completed(job_id):
     "show completed accession numbers"
     s3 = boto3.client("s3")  # pylint: disable=invalid-name
+    batch = boto3.client("batch")
+    resp = batch.describe_jobs(jobs=[job_id])["jobs"]
+    if not resp:
+        print("No information on this job.")
+        sys.exit(1)
+    job = resp[0]
+    num_viruses = int(job["jobName"].split("-")[-1])
+
     completed_map = defaultdict(list)
-    args = dict(Bucket="fh-pi-jerome-k", Prefix=PREFIX, MaxKeys=999)
+    args = dict(
+        Bucket=get_env_var(job, "BUCKET_NAME"),
+        Prefix=get_env_var(job, "PREFIX"),
+        MaxKeys=999,
+    )
     while True:
         response = s3.list_objects_v2(**args)
         if not "Contents" in response:
@@ -142,12 +159,12 @@ def show_completed():
         except KeyError:
             break
     completed = [
-        x for x in completed_map.keys() if len(completed_map[x]) == NUM_VIRUSES
+        x for x in completed_map.keys() if len(completed_map[x]) == num_viruses
     ]
     return completed
 
 
-def show_in_progress():  # pylint: disable=too-many-locals
+def show_in_progress(job_id):  # pylint: disable=too-many-locals
     "show accession numbers that are in progress"
     s3 = boto3.client("s3")  # pylint: disable=invalid-name
     batch = boto3.client("batch")
@@ -188,40 +205,40 @@ def show_in_progress():  # pylint: disable=too-many-locals
         tmp = [x for i, x in enumerate(tmp) if not i in failsons]
         accession_nums.extend(tmp)
 
-    completed = set(show_completed())
+    completed = set(show_completed(job_id))
     ret = set(accession_nums) - completed
     return list(ret)
 
 
-def select_from_csv(num_rows, method):
-    """
-    Selects accession numbers from the csv file.
-    Args:
-        num_rows (int): the number of accession numbers to return.
-                        Will return all available rows if this number
-                        is larger than the number of rows.
-        method (str): one of "random" or "small". "random" selects accession
-                      numbers randomly; "small"  selects them by size
-                      (in ascending order).
-    """
-    if not method in ["small", "random"]:
-        raise ValueError("invalid method! must be 'small' or 'random'")
-    raw_df = pd.read_csv(CSV_FILE)
-    exclude = []
-    exclude.extend(show_completed())
-    exclude.extend(show_in_progress())
-    df0 = raw_df[
-        ~raw_df["accession_number"].isin(exclude)
-    ]  # pylint: disable=invalid-name
-    nrow = df0.shape[0]
-    if num_rows > nrow:
-        num_rows = nrow
-    if num_rows < 1:
-        print("no SRAs left to process.")
-        sys.exit(1)
-    if method == "small":
-        return df0["accession_number"].head(num_rows).tolist()
-    return df0["accession_number"].sample(num_rows).tolist()
+# def select_from_csv(num_rows, method):
+#     """
+#     Selects accession numbers from the csv file.
+#     Args:
+#         num_rows (int): the number of accession numbers to return.
+#                         Will return all available rows if this number
+#                         is larger than the number of rows.
+#         method (str): one of "random" or "small". "random" selects accession
+#                       numbers randomly; "small"  selects them by size
+#                       (in ascending order).
+#     """
+#     if not method in ["small", "random"]:
+#         raise ValueError("invalid method! must be 'small' or 'random'")
+#     raw_df = pd.read_csv(CSV_FILE)
+#     exclude = []
+#     exclude.extend(show_completed())
+#     exclude.extend(show_in_progress())
+#     df0 = raw_df[
+#         ~raw_df["accession_number"].isin(exclude)
+#     ]  # pylint: disable=invalid-name
+#     nrow = df0.shape[0]
+#     if num_rows > nrow:
+#         num_rows = nrow
+#     if num_rows < 1:
+#         print("no SRAs left to process.")
+#         sys.exit(1)
+#     if method == "small":
+#         return df0["accession_number"].head(num_rows).tolist()
+#     return df0["accession_number"].sample(num_rows).tolist()
 
 
 def to_aws_env(env):
@@ -246,7 +263,7 @@ def get_latest_jobdef_revision(batch_client, jobdef_name):  # FIXME handle pagin
 
 
 def submit(
-    num_rows, method, references, filename=None, prefix=None
+    references, filename=None, prefix=None
 ):  # pylint: disable=too-many-locals
     """
     Utility function to submit jobs.
@@ -264,8 +281,8 @@ def submit(
         with open(filename, "r") as fileh:
             accession_nums = fileh.readlines()
             accession_nums = [x.strip() for x in accession_nums]
-    else:
-        accession_nums = select_from_csv(num_rows, method)
+    # else:
+    #     accession_nums = select_from_csv(num_rows, method)
     bytesarr = bytearray("\n".join(accession_nums), "utf-8")
     bytesio = io.BytesIO(bytesarr)
     job_size = len(accession_nums)
@@ -313,19 +330,19 @@ def submit(
     return res
 
 
-def submit_small(num_jobs, references):
-    "submit <num_jobs> jobs of ascending size"
-    return submit(num_jobs, "small", references)
+# def submit_small(num_jobs, references):
+#     "submit <num_jobs> jobs of ascending size"
+#     return submit(num_jobs, "small", references)
 
 
-def submit_random(num_jobs, references):
-    "submit <num_jobs> randomly chosen jobs"
-    return submit(num_jobs, "random", references)
+# def submit_random(num_jobs, references):
+#     "submit <num_jobs> randomly chosen jobs"
+#     return submit(num_jobs, "random", references)
 
 
 def submit_file(filename, references, prefix=None):
     "submit accession numbers from filename"
-    return submit(0, "file", references, filename, prefix)
+    return submit(references, filename, prefix)
 
 
 def main():
@@ -337,28 +354,30 @@ def main():
         "-c",
         "--completed",
         help="show completed accession numbers",
-        action="store_true",
+        type=str,
+        metavar="JOB_ID",
     )
     parser.add_argument(
         "-i",
         "--in-progress",
         help="show accession numbers that are in progress",
-        action="store_true",
+        type=str,
+        metavar="JOB_ID",
     )
-    parser.add_argument(
-        "-s",
-        "--submit-small",
-        help="submit N jobs of ascending size",
-        type=int,
-        metavar="N",
-    )
-    parser.add_argument(
-        "-r",
-        "--submit-random",
-        help="submit N randomly chosen jobs",
-        type=int,
-        metavar="N",
-    )
+    # parser.add_argument(
+    #     "-s",
+    #     "--submit-small",
+    #     help="submit N jobs of ascending size",
+    #     type=int,
+    #     metavar="N",
+    # )
+    # parser.add_argument(
+    #     "-r",
+    #     "--submit-random",
+    #     help="submit N randomly chosen jobs",
+    #     type=int,
+    #     metavar="N",
+    # )
     parser.add_argument(
         "-f",
         "--submit-file",
@@ -395,7 +414,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.submit_small or args.submit_random or args.submit_file:
+    if args.submit_file:
         if not args.references:
             print(
                 "You must supply a comma-separated list of references with the -y flag."
@@ -406,19 +425,19 @@ def main():
         print("invoke with --help to see usage information.")
         sys.exit(1)
     if args.completed:
-        completed = show_completed()
+        completed = show_completed(args.completed)
         for item in completed:
             print(item)
     elif args.in_progress:
-        in_progress = show_in_progress()
+        in_progress = show_in_progress(args.in_progress)
         for item in in_progress:
             print(item)
-    elif args.submit_small:
-        result = submit_small(args.submit_small, args.references)
-        print(json.dumps(result, sort_keys=True, indent=4))
-    elif args.submit_random:
-        result = submit_random(args.submit_random, args.references)
-        print(json.dumps(result, sort_keys=True, indent=4))
+    # elif args.submit_small:
+    #     result = submit_small(args.submit_small, args.references)
+    #     print(json.dumps(result, sort_keys=True, indent=4))
+    # elif args.submit_random:
+    #     result = submit_random(args.submit_random, args.references)
+    #     print(json.dumps(result, sort_keys=True, indent=4))
     elif args.submit_file:
         result = submit_file(args.submit_file, args.references, args.prefix)
         print(json.dumps(result, sort_keys=True, indent=4))
