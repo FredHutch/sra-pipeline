@@ -6,6 +6,7 @@ import contextlib
 import datetime
 from functools import partial
 import glob
+import json
 import os
 import os.path
 from pathlib import Path
@@ -152,12 +153,13 @@ def get_fastq_files_from_s3(sra_accession):
 
 
 def object_exists_in_s3(key):
-    "check if object exists in S3"
+    "check if object exists in S3 and is not empty"
     try:
-        sh.aws(
+        ret = sh.aws(
             "s3api", "head-object", "--bucket", os.getenv("BUCKET_NAME"), "--key", key
         )
-        return True
+        obj = json.loads(str(ret))
+        return obj['ContentLength'] > 0
     except sh.ErrorReturnCode_255:
         return False
     return False  # TODO revisit
