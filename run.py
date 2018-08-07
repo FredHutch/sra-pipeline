@@ -159,7 +159,7 @@ def object_exists_in_s3(key):
             "s3api", "head-object", "--bucket", os.getenv("BUCKET_NAME"), "--key", key
         )
         obj = json.loads(str(ret))
-        return obj['ContentLength'] > 0
+        return obj["ContentLength"] > 0
     except sh.ErrorReturnCode_255:
         return False
     return False  # TODO revisit
@@ -202,7 +202,7 @@ def download_from_sra(sra_accession):
         prefetch_exit_code = prefetch.exit_code
         if prefetch_exit_code != 0:
             fprint(
-                "prefetch existed with nonzero result-code {}, cleaning up and exiting...".format(
+                "prefetch exited with nonzero result-code {}, cleaning up and exiting...".format(
                     prefetch_exit_code
                 )
             )
@@ -408,7 +408,8 @@ def main():
             fprint("Unexpected exception:")
             fprint(traceback.print_exception(*sys.exc_info()))
             sys.exit(1)
-        cleanup(scratch)
+        finally:  # hopefully we still exit with an error code if there was an error
+            cleanup(scratch)
 
 
 if __name__ == "__main__":
