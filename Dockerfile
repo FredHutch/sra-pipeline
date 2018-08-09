@@ -16,13 +16,13 @@ RUN curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
 
 RUN python3.6 /tmp/get-pip.py
 
-RUN  curl -LO http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.0/sratoolkit.2.9.0-ubuntu64.tar.gz
-RUN tar zxf sratoolkit.2.9.0-ubuntu64.tar.gz
+RUN  curl -LO http://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.9.2/sratoolkit.2.9.2-ubuntu64.tar.gz
+RUN tar zxf sratoolkit.2.9.2-ubuntu64.tar.gz
 
 RUN curl -LO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
 ADD prj_17102.ngc /
-RUN /sratoolkit.2.9.0-ubuntu64/bin/vdb-config --import prj_17102.ngc
+RUN /sratoolkit.2.9.2-ubuntu64/bin/vdb-config --import prj_17102.ngc
 
 RUN curl -LO https://github.com/BenLangmead/bowtie2/releases/download/v2.3.4.1/bowtie2-2.3.4.1-linux-x86_64.zip
 
@@ -47,7 +47,7 @@ RUN chmod a+x /usr/local/bin/fetch_and_run.sh
 
 USER neo
 
-ENV PATH="${PATH}:/bowtie2-2.3.4.1-linux-x86_64/:/sratoolkit.2.9.0-ubuntu64/bin/"
+ENV PATH="${PATH}:/bowtie2-2.3.4.1-linux-x86_64/:/sratoolkit.2.9.2-ubuntu64/bin/"
 
 WORKDIR /home/neo
 

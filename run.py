@@ -167,7 +167,7 @@ def object_exists_in_s3(key):
 
 def get_size_of_sra(sra_accession):
     "get size of sra"
-    # prefetch = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
+    # prefetch = sh.Command("/sratoolkit.2.9.2-ubuntu64/bin/prefetch")
     fprint("size of {} is {}.".format(sra_accession, sh.prefetch("-s", sra_accession)))
 
 
@@ -186,7 +186,7 @@ def download_from_sra(sra_accession):
     if os.path.exists("{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession)):
         fprint("SRA file already exists, skipping download")
     else:
-        # prefetch_cmd = sh.Command("/sratoolkit.2.9.0-ubuntu64/bin/prefetch")
+        # prefetch_cmd = sh.Command("/sratoolkit.2.9.2-ubuntu64/bin/prefetch")
         prefetch = sh.prefetch(
             "--transport",
             "http",
@@ -367,7 +367,7 @@ def main():
     ensure_correct_environment()
     add_to_path("/home/neo/miniconda3/bin")
     add_to_path("/bowtie2-2.3.4.1-linux-x86_64")
-    add_to_path("/sratoolkit.2.9.0-ubuntu64/bin")
+    add_to_path("/sratoolkit.2.9.2-ubuntu64/bin")
     fprint("public hostname for this container is {}".format(get_metadata()))
     fprint("container_id is {}".format(get_container_id()))
     configure_aws()
