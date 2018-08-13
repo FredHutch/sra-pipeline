@@ -371,6 +371,9 @@ def main():
     fprint("public hostname for this container is {}".format(get_metadata()))
     fprint("container_id is {}".format(get_container_id()))
     configure_aws()
+    # get ngc file from s3
+    sh.aws("s3", "cp", "s3://fh-pi-jerome-k/pipeline-auth-files/prj_17102.ngc", ".")
+    sh.vdb_config("--import", "prj_17102.ngc")
     scratch, sra_accession = setup_scratch()
     with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
         sh.mkdir("-p", PTMP)
