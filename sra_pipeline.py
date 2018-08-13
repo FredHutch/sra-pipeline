@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import ClientError
 import numpy as np
+
 # import pandas as pd
 
 PREFIX = "pipeline-results"
@@ -210,6 +211,22 @@ def show_in_progress(job_id):  # pylint: disable=too-many-locals
     return list(ret)
 
 
+def show_remaining(job_id, completed):
+    "show items still remaining in this job"
+    batch = boto3.client("batch")
+    job = batch.describe_jobs(jobs=[job_id])["jobs"][0]
+
+    accession_list = get_env_var(job, "ACCESSION_LIST")
+    parsed_url = urlparse(accession_list)
+    bucket = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")
+    s3 = boto3.client("s3")  # pylint: disable=invalid-name
+    obj = s3.get_object(Bucket=bucket, Key=path)
+    accstr = obj["Body"].read().decode("utf-8")
+    all_sras = accstr.split("\n")
+    return set(all_sras) - set(completed)
+
+
 # def select_from_csv(num_rows, method):
 #     """
 #     Selects accession numbers from the csv file.
@@ -262,9 +279,7 @@ def get_latest_jobdef_revision(batch_client, jobdef_name):  # FIXME handle pagin
     return (revision, cpus)
 
 
-def submit(
-    references, filename=None, prefix=None
-):  # pylint: disable=too-many-locals
+def submit(references, filename=None, prefix=None):  # pylint: disable=too-many-locals
     """
     Utility function to submit jobs.
     Args:
@@ -379,6 +394,13 @@ def main():
     #     metavar="N",
     # )
     parser.add_argument(
+        "-r",
+        "--remaining",
+        help="show remaining items (not yet completed)",
+        type=str,
+        metavar="JOB_ID",
+    )
+    parser.add_argument(
         "-f",
         "--submit-file",
         help="submit accession numbers contained in FILE",
@@ -428,6 +450,12 @@ def main():
         completed = show_completed(args.completed)
         for item in completed:
             print(item)
+    elif args.remaining:
+        completed = show_completed(args.remaining)
+        remaining = show_remaining(args.remaining, completed)
+        for item in remaining:
+            print(item)
+
     elif args.in_progress:
         in_progress = show_in_progress(args.in_progress)
         for item in in_progress:
