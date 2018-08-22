@@ -28,7 +28,9 @@ RUN curl -LO https://github.com/BenLangmead/bowtie2/releases/download/v2.3.4.1/b
 
 RUN unzip bowtie2-2.3.4.1-linux-x86_64.zip
 
-RUN pip3.6 install awscli requests sh
+# TODO install pipenv and run `pipenv install` 
+# to automatically install all required python deps
+RUN pip3.6 install awscli requests sh synapseclient
 
 ADD bt2/ /bt2/
 
