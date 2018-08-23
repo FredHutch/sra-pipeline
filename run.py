@@ -3,6 +3,7 @@
 "script to run on AWS batch instance"
 
 import contextlib
+import csv
 import datetime
 from functools import partial
 import glob
@@ -98,6 +99,27 @@ def ensure_correct_environment():
         sys.exit(1)
 
 
+def get_synapse_metadata(batch_job_array_index):
+    """
+    given a line number, get synapse metadata for that line
+    Line number (starts from 1, not 0) should take into account header. So if we want the 
+    first non header line, it should be 2.
+
+    Returns the line converted to a dict where the keys are
+    from the header line of the tsv.
+    """
+    with open("temp.tsv", "a") as tmpfile:
+        sh.head("-1", "accessionlist.txt", _out=tmpfile)
+        line = batch_job_array_index
+        sh.sed("{}q;d".format(line), "accessionlist.txt", _out=tmpfile)
+    hsh = None
+    with open("temp.tsv") as tmpfile_r:
+        reader = csv.DictReader(tmpfile_r, delimiter="\t")
+        for row in reader:
+            hsh = row
+    return dict(hsh)
+
+
 def setup_scratch():
     "sets up scratch, returns scratch dir and sra accession number"
     sh.aws("s3", "cp", os.getenv("ACCESSION_LIST"), "accessionlist.txt")
@@ -106,24 +128,26 @@ def setup_scratch():
         sh.rm("-rf", "{}/ncbi".format(HOME))
         if os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"):
             fprint("this is an array job")
-            line = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")) + 1
-            sra_accession = sh.sed("{}q;d".format(line), "accessionlist.txt").strip()
+            # add 2, one because AWS counts from 0 and sed counts from 1,
+            # and one because of the header line.
+            line = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")) + 2
+            synapse_metadata = get_synapse_metadata(line)
             scratch = "/scratch/{}/{}/".format(
                 os.getenv("AWS_BATCH_JOB_ID"), os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")
             )
         else:
             fprint("this is not an array job")
-            sra_accession = sh.sed("1q;d", "accessionlist.txt").strip()
+            synapse_metadata = get_synapse_metadata(2)
             scratch = "/scratch/{}/".format(os.getenv("AWS_BATCH_JOB_ID"))
         sh.mkdir("-p", scratch)
         sh.ln("-s", scratch, "{}/ncbi".format(HOME))
         sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
     else:
         fprint("this is not an aws batch job")
-        sra_accession = sh.sed("1q;d", "accessionlist.txt").strip()
+        synapse_metadata = get_synapse_metadata(2)
         scratch = "."
         sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
-    return scratch, sra_accession
+    return scratch, synapse_metadata
 
 
 def get_fastq_files_from_s3(sra_accession):
@@ -251,18 +275,14 @@ def copy_fastqs_to_s3(sra_accession):
         )
 
 
-def run_bowtie(sra_accession, read_handling="equal"):
+def run_bowtie(synapse_id, fastq_file_name):
     """
     run bowtie2
-    sra_accession - sra accession
-    read_handling - if both fastq files are of equal length
-                    (indicated by value "equal", the default),
-                    then both fastq files are used. If value is
-                    1 or 2, then the given single fastq file is used.
+    synapse_id - synapse id
+    fastq_file_name - fastq file name
     """
     viruses = os.getenv("REFERENCES").split(",")
     viruses = [x.strip() for x in viruses]
-    # cmd = sh.Command("/bowtie2-2.3.4.1-linux-x86_64//bowtie2")
     bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False)
 
     for virus in viruses:
@@ -273,26 +293,12 @@ def run_bowtie(sra_accession, read_handling="equal"):
             "--no-unal",
             "-x",
             "/bt2/{}".format(virus),
+            "-U",
+            fastq_file_name,
         ]
-        if read_handling == "equal":
-            bowtie_args.extend(
-                [
-                    "-1",
-                    "{}_1.fastq.gz".format(sra_accession),
-                    "-2",
-                    "{}_2.fastq.gz".format(sra_accession),
-                ]
-            )
-        elif read_handling == 1:
-            bowtie_args.extend(["-U", "{}_1.fastq.gz".format(sra_accession)])
-        elif read_handling == 2:
-            bowtie_args.extend(["-U", "{}_2.fastq.gz".format(sra_accession)])
-
         fprint("processing virus {} ...".format(virus))
         if object_exists_in_s3(
-            "{}/{}/{}/{}.sam".format(
-                os.getenv("PREFIX"), sra_accession, virus, sra_accession
-            )
+            "{}/{}/{}/{}.sam".format(os.getenv("PREFIX"), synapse_id, virus, synapse_id)
         ):
             fprint(
                 "output sam file already exists in s3 for virus {}, skipping...".format(
@@ -309,9 +315,9 @@ def run_bowtie(sra_accession, read_handling="equal"):
                     "s3://{}/{}/{}/{}/{}.sam".format(
                         os.getenv("BUCKET_NAME"),
                         os.getenv("PREFIX"),
-                        sra_accession,
+                        synapse_id,
                         virus,
-                        sra_accession,
+                        synapse_id,
                     ),
                     _iter=True,
                 ):
@@ -362,6 +368,12 @@ def add_to_path(directory):
     print("Added {} to PATH.".format(directory))
 
 
+def download_from_synapse(synapse_id):
+    "download fastq file from synapse"
+    # TODO FIXME think about piping/streaming to bowtie2?
+    sh.synapse("get", synapse_id)
+
+
 def main():
     "do the work"
     ensure_correct_environment()
@@ -374,39 +386,34 @@ def main():
     # get ngc file from s3
     sh.aws("s3", "cp", "s3://fh-pi-jerome-k/pipeline-auth-files/prj_17102.ngc", ".")
     sh.vdb_config("--import", "prj_17102.ngc")
-    scratch, sra_accession = setup_scratch()
+    # get synapse auth file from s3
+    sh.aws(
+        "s3",
+        "cp",
+        "s3://fh-pi-jerome-k/pipeline-auth-files/.synapseConfig",
+        "{}/".format(HOME),
+    )
+    scratch, synapse_metadata = setup_scratch()
     with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
         sh.mkdir("-p", PTMP)
         clean_directory(PTMP)
-        fprint("sra accession is {}".format(sra_accession))
+
+        synapse_id = synapse_metadata["file.id"]
+        fastq_file_name = synapse_metadata["file.name"]
+
+        fprint("synapse id is", synapse_id)
+        fprint("fastq (?) file name is", fastq_file_name)
         fprint("scratch is {}".format(scratch))
-        if not get_fastq_files_from_s3(sra_accession):
-            download_from_sra(sra_accession)
-            run_fastq_dump(sra_accession)
-            copy_fastqs_to_s3(sra_accession)
+
+        download_from_synapse(synapse_id)
+        # dante TODO FIXME ...
+        # if not get_fastq_files_from_s3(sra_accession):
+        #     download_from_sra(sra_accession)
+        #     run_fastq_dump(sra_accession)
+        #     copy_fastqs_to_s3(sra_accession)
 
         try:
-            run_bowtie(sra_accession)
-        except sh.ErrorReturnCode_134 as exc:
-            sh.aws(
-                "s3",
-                "rm",
-                "s3://{}/{}/{}/".format(
-                    os.getenv("BUCKET_NAME"), os.getenv("PREFIX"), sra_accession
-                ),
-                "--recursive",
-            )
-            errtxt = str(exc)
-            if "fewer reads in file specified with -2" in errtxt:
-                fprint(
-                    "Oops, -2 file has fewer reads than -1 file, trying again with -1 only"
-                )
-                run_bowtie(sra_accession, 1)
-            elif "fewer reads in file specified with -1" in errtxt:
-                fprint(
-                    "Oops, -1 file has fewer reads than -2 file, trying again with -2 only"
-                )
-                run_bowtie(sra_accession, 2)
+            run_bowtie(synapse_id, fastq_file_name)
         except:  # pylint: disable=bare-except
             fprint("Unexpected exception:")
             fprint(traceback.print_exception(*sys.exc_info()))
