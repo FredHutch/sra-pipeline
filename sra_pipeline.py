@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import ClientError
 import numpy as np
+import sh
 
 # import pandas as pd
 
@@ -279,7 +280,7 @@ def get_latest_jobdef_revision(batch_client, jobdef_name):  # FIXME handle pagin
     return (revision, cpus)
 
 
-def submit(references, filename=None, prefix=None):  # pylint: disable=too-many-locals
+def submit(references, filename=None, prefix=None, delete_file=False):  # pylint: disable=too-many-locals
     """
     Utility function to submit jobs.
     Args:
@@ -298,9 +299,11 @@ def submit(references, filename=None, prefix=None):  # pylint: disable=too-many-
             accession_nums = [x.strip() for x in accession_nums]
     # else:
     #     accession_nums = select_from_csv(num_rows, method)
+
     bytesarr = bytearray("\n".join(accession_nums), "utf-8")
     bytesio = io.BytesIO(bytesarr)
-    job_size = len(accession_nums)
+    # subtract 1 because of header line:
+    job_size = len(accession_nums) -1
     key = "{}-{}.txt".format(nowstr, job_size)
     url = "s3://fh-pi-jerome-k/sra-submission-manifests/{}".format(key)
     s3.upload_fileobj(
@@ -339,11 +342,16 @@ def submit(references, filename=None, prefix=None):  # pylint: disable=too-many-
     )
     if job_size > 1:
         args["arrayProperties"] = dict(size=job_size)
+    # print(args)
     res = batch.submit_job(**args)
+
+    if delete_file:
+        if os.path.exists(filename):
+            os.remove(filename)
 
     del res["ResponseMetadata"]
     return res
-
+    # return {}
 
 # def submit_small(num_jobs, references):
 #     "submit <num_jobs> jobs of ascending size"
@@ -358,6 +366,29 @@ def submit(references, filename=None, prefix=None):  # pylint: disable=too-many-
 def submit_file(filename, references, prefix=None):
     "submit accession numbers from filename"
     return submit(references, filename, prefix)
+
+        # references, filename=None, prefix=None, delete_file=False
+
+def submit_synapse(synapse_id, references, prefix):
+    """
+    create a job to process all fastq files 'under'
+    the given synapse id
+    """
+    synapse_tsv_file = "{}.tsv".format(synapse_id)
+    sh.synapse(
+        "query",
+        "SELECT * FROM file WHERE parentId==\"{}\"".format(synapse_id),
+        _out=synapse_tsv_file
+    )
+
+    # remove this after testing
+    # sh.head("-2", synapse_tsv_file, _out="tmp.tsv")
+    # os.remove(synapse_tsv_file)
+    # os.rename("tmp.tsv", synapse_tsv_file)
+    # end section to remove
+
+
+    return submit(references, filename=synapse_tsv_file, prefix=prefix, delete_file=True)
 
 
 def main():
@@ -433,6 +464,13 @@ def main():
         type=str,
         metavar="REFERENCES",
     )
+    parser.add_argument(
+        "-s",
+        "--synapse-id",
+        help="run against all fastq files listed under SYNAPSE_ID",
+        type=str,
+        metavar="SYNAPSE_ID",
+    )
 
     args = parser.parse_args()
 
@@ -473,6 +511,9 @@ def main():
         result = search_logs(args.job_id, args.query)
         for item in result:
             print(item)
+    elif args.synapse_id:
+        result = submit_synapse(args.synapse_id, args.references, args.prefix)
+        print(json.dumps(result, sort_keys=True, indent=4))
 
 
 if __name__ == "__main__":
