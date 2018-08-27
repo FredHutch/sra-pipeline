@@ -9,6 +9,7 @@ import datetime
 import io
 import json
 import os
+import re
 import sys
 from time import sleep
 
@@ -280,7 +281,9 @@ def get_latest_jobdef_revision(batch_client, jobdef_name):  # FIXME handle pagin
     return (revision, cpus)
 
 
-def submit(references, filename=None, prefix=None, delete_file=False):  # pylint: disable=too-many-locals
+def submit(
+    references, filename=None, prefix=None, delete_file=False
+):  # pylint: disable=too-many-locals
     """
     Utility function to submit jobs.
     Args:
@@ -303,7 +306,7 @@ def submit(references, filename=None, prefix=None, delete_file=False):  # pylint
     bytesarr = bytearray("\n".join(accession_nums), "utf-8")
     bytesio = io.BytesIO(bytesarr)
     # subtract 1 because of header line:
-    job_size = len(accession_nums) -1
+    job_size = len(accession_nums) - 1
     key = "{}-{}.txt".format(nowstr, job_size)
     url = "s3://fh-pi-jerome-k/sra-submission-manifests/{}".format(key)
     s3.upload_fileobj(
@@ -342,7 +345,8 @@ def submit(references, filename=None, prefix=None, delete_file=False):  # pylint
     )
     if job_size > 1:
         args["arrayProperties"] = dict(size=job_size)
-    # print(args)
+
+    # uncomment this:
     res = batch.submit_job(**args)
 
     if delete_file:
@@ -351,7 +355,7 @@ def submit(references, filename=None, prefix=None, delete_file=False):  # pylint
 
     del res["ResponseMetadata"]
     return res
-    # return {}
+
 
 # def submit_small(num_jobs, references):
 #     "submit <num_jobs> jobs of ascending size"
@@ -367,19 +371,25 @@ def submit_file(filename, references, prefix=None):
     "submit accession numbers from filename"
     return submit(references, filename, prefix)
 
-        # references, filename=None, prefix=None, delete_file=False
+    # references, filename=None, prefix=None, delete_file=False
+
 
 def submit_synapse(synapse_id, references, prefix):
     """
     create a job to process all fastq files 'under'
     the given synapse id
     """
+
     synapse_tsv_file = "{}.tsv".format(synapse_id)
-    sh.synapse(
-        "query",
-        "SELECT * FROM file WHERE parentId==\"{}\"".format(synapse_id),
-        _out=synapse_tsv_file
-    )
+    with open(synapse_tsv_file, "w") as synapse_fh:
+        synapse_fh.write("file.id\tfile.name\n")
+        for line in sh.synapse("list", "-r", synapse_id, _iter=True):
+            line = line.strip()
+            if not line.endswith(".bam"):
+                continue
+            line = re.sub(' +', '\t', line)
+            synapse_fh.write(line)
+            synapse_fh.write("\n")
 
     # remove this after testing
     # sh.head("-2", synapse_tsv_file, _out="tmp.tsv")
@@ -387,8 +397,9 @@ def submit_synapse(synapse_id, references, prefix):
     # os.rename("tmp.tsv", synapse_tsv_file)
     # end section to remove
 
-
-    return submit(references, filename=synapse_tsv_file, prefix=prefix, delete_file=True)
+    return submit(
+        references, filename=synapse_tsv_file, prefix=prefix, delete_file=True
+    )
 
 
 def main():
@@ -467,7 +478,7 @@ def main():
     parser.add_argument(
         "-s",
         "--synapse-id",
-        help="run against all fastq files listed under SYNAPSE_ID",
+        help="run against all bam files listed under SYNAPSE_ID",
         type=str,
         metavar="SYNAPSE_ID",
     )
