@@ -386,6 +386,7 @@ def convert_bam_to_fastq(bam_file_name):
             "bam2fq",
             _piped=True,
         ),
+        "-f",
         _out=fastq_file_name,
     )
     return fastq_file_name
