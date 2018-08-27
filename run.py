@@ -383,7 +383,7 @@ def convert_bam_to_fastq(bam_file_name):
     sh.gzip(
         sh.samtools(
             sh.samtools("view", "-b", "-f", "4", bam_file_name, _piped=True),
-            "bam2fq",
+            "bam2fq", "-",
             _piped=True,
         ),
         "-f",
