@@ -4,7 +4,15 @@ FROM ubuntu:16.04
 RUN apt-get update -y
 
 
-RUN apt-get update -y && apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv software-properties-common python-software-properties
+RUN apt-get update -y && apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv software-properties-common python-software-properties bzip2 \
+    g++ \
+    libbz2-dev \
+    liblzma-dev \
+    make \
+    ncurses-dev \
+    wget \
+    zlib1g-dev
+
 
 RUN add-apt-repository ppa:jonathonf/python-3.6 -y
 
@@ -46,6 +54,26 @@ RUN adduser --disabled-password --gecos "" neo
 RUN curl -L https://raw.githubusercontent.com/FredHutch/url-fetch-and-run/master/fetch-and-run/fetch_and_run.sh > /usr/local/bin/fetch_and_run.sh
 
 RUN chmod a+x /usr/local/bin/fetch_and_run.sh
+
+ENV SAMTOOLS_INSTALL_DIR=/opt/samtools
+
+WORKDIR /tmp
+
+RUN wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2 && \
+    tar --bzip2 -xf samtools-1.9.tar.bz2
+
+WORKDIR /tmp/samtools-1.9
+RUN ./configure --enable-plugins --prefix=$SAMTOOLS_INSTALL_DIR && \
+    make all all-htslib && \
+    make install install-htslib
+
+WORKDIR /
+RUN ln -s $SAMTOOLS_INSTALL_DIR/bin/samtools /usr/bin/samtools && \
+    rm -rf /tmp/samtools-1.9
+
+
+WORKDIR /
+
 
 USER neo
 
