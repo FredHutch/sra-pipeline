@@ -12,6 +12,7 @@ import os
 import os.path
 from pathlib import Path
 import random
+import re
 import sys
 import time
 import traceback
@@ -108,6 +109,8 @@ def get_synapse_metadata(batch_job_array_index):
     Returns the line converted to a dict where the keys are
     from the header line of the tsv.
     """
+    if os.path.exists("temp.tsv"):
+        os.remove("temp.tsv")
     with open("temp.tsv", "a") as tmpfile:
         sh.head("-1", "accessionlist.txt", _out=tmpfile)
         line = batch_job_array_index
@@ -374,6 +377,20 @@ def download_from_synapse(synapse_id):
     sh.synapse("get", synapse_id)
 
 
+def convert_bam_to_fastq(bam_file_name):
+    "convert bam to fastq"
+    fastq_file_name = re.sub(".bam$", ".fastq.gz", bam_file_name)
+    sh.gzip(
+        sh.samtools(
+            sh.samtools("view", "-b", "-f", "4", bam_file_name, _piped=True),
+            "bam2fq",
+            _piped=True,
+        ),
+        _out=fastq_file_name,
+    )
+    return fastq_file_name
+
+
 def main():
     "do the work"
     ensure_correct_environment()
@@ -399,10 +416,10 @@ def main():
         clean_directory(PTMP)
 
         synapse_id = synapse_metadata["file.id"]
-        fastq_file_name = synapse_metadata["file.name"]
+        bam_file_name = synapse_metadata["file.name"]
 
         fprint("synapse id is", synapse_id)
-        fprint("fastq (?) file name is", fastq_file_name)
+        fprint("bam (?) file name is", bam_file_name)
         fprint("scratch is {}".format(scratch))
 
         download_from_synapse(synapse_id)
@@ -411,7 +428,7 @@ def main():
         #     download_from_sra(sra_accession)
         #     run_fastq_dump(sra_accession)
         #     copy_fastqs_to_s3(sra_accession)
-
+        fastq_file_name = convert_bam_to_fastq(bam_file_name)
         try:
             run_bowtie(synapse_id, fastq_file_name)
         except:  # pylint: disable=bare-except
