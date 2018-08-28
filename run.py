@@ -103,7 +103,7 @@ def ensure_correct_environment():
 def get_synapse_metadata(batch_job_array_index):
     """
     given a line number, get synapse metadata for that line
-    Line number (starts from 1, not 0) should take into account header. So if we want the 
+    Line number (starts from 1, not 0) should take into account header. So if we want the
     first non header line, it should be 2.
 
     Returns the line converted to a dict where the keys are
@@ -286,8 +286,7 @@ def run_bowtie(synapse_id, fastq_file_name):
     """
     viruses = os.getenv("REFERENCES").split(",")
     viruses = [x.strip() for x in viruses]
-    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False,
-                      _err="bowtie2.err")
+    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False, _err="bowtie2.err")
 
     for virus in viruses:
         bowtie_args = [
@@ -329,6 +328,14 @@ def run_bowtie(synapse_id, fastq_file_name):
             fprint("bowtie2 duration for {}: {}".format(virus, timer.interval))
             fprint("stderr output of bowtie2:")
             sh.cat("bowtie2.err")
+            sh.aws(
+                "cp",
+                "bowtie2.err",
+                "s3://{}/{}/{}/{}/".format(
+                    os.getenv("BUCKET_NAME"), os.getenv("PREFIX"), synapse_id, virus
+                ),
+            )
+
 
 def get_read_counts(sra_accession):
     "return read counts for fastq files 1 and 2"
@@ -387,7 +394,8 @@ def convert_bam_to_fastq(bam_file_name):
     sh.gzip(
         sh.samtools(
             sh.samtools("view", "-b", "-f", "4", bam_file_name, _piped=True),
-            "bam2fq", "-",
+            "bam2fq",
+            "-",
             _piped=True,
         ),
         "-f",
