@@ -373,9 +373,11 @@ def add_to_path(directory):
     print("Added {} to PATH.".format(directory))
 
 
-def download_from_synapse(synapse_id):
+def download_from_synapse(synapse_id, bam_file_name):
     "download fastq file from synapse"
     # TODO FIXME think about piping/streaming to bowtie2?
+    if os.path.exists(bam_file_name):
+        os.remove(bam_file_name)
     sh.synapse("get", synapse_id)
 
 
@@ -425,7 +427,7 @@ def main():
         fprint("bam (?) file name is", bam_file_name)
         fprint("scratch is {}".format(scratch))
 
-        download_from_synapse(synapse_id)
+        download_from_synapse(synapse_id, bam_file_name)
         # dante TODO FIXME ...
         # if not get_fastq_files_from_s3(sra_accession):
         #     download_from_sra(sra_accession)
