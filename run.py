@@ -327,7 +327,8 @@ def run_bowtie(synapse_id, fastq_file_name):
                     fprint(line)
             fprint("bowtie2 duration for {}: {}".format(virus, timer.interval))
             fprint("stderr output of bowtie2:")
-            sh.cat("bowtie2.err")
+            for line in sh.cat("bowtie2.err", _iter=True):
+                fprint(line)
             sh.aws(
                 "s3",
                 "cp",
