@@ -329,6 +329,7 @@ def run_bowtie(synapse_id, fastq_file_name):
             fprint("stderr output of bowtie2:")
             sh.cat("bowtie2.err")
             sh.aws(
+                "s3",
                 "cp",
                 "bowtie2.err",
                 "s3://{}/{}/{}/{}/".format(
