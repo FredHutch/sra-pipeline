@@ -392,9 +392,9 @@ def submit_synapse(synapse_id, references, prefix):
             synapse_fh.write("\n")
 
     # remove this after testing
-    # sh.head("-2", synapse_tsv_file, _out="tmp.tsv")
-    # os.remove(synapse_tsv_file)
-    # os.rename("tmp.tsv", synapse_tsv_file)
+    sh.head("-2", synapse_tsv_file, _out="tmp.tsv")
+    os.remove(synapse_tsv_file)
+    os.rename("tmp.tsv", synapse_tsv_file)
     # end section to remove
 
     return submit(

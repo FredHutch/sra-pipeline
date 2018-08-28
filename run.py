@@ -286,7 +286,8 @@ def run_bowtie(synapse_id, fastq_file_name):
     """
     viruses = os.getenv("REFERENCES").split(",")
     viruses = [x.strip() for x in viruses]
-    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False)
+    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False,
+                      _err="bowtie2.err")
 
     for virus in viruses:
         bowtie_args = [
@@ -326,7 +327,8 @@ def run_bowtie(synapse_id, fastq_file_name):
                 ):
                     fprint(line)
             fprint("bowtie2 duration for {}: {}".format(virus, timer.interval))
-
+            fprint("stderr output of bowtie2:")
+            sh.cat("bowtie2.err")
 
 def get_read_counts(sra_accession):
     "return read counts for fastq files 1 and 2"
