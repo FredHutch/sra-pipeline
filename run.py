@@ -389,6 +389,17 @@ def download_from_synapse(synapse_id, bam_file_name):
         os.remove(bam_file_name)
     sh.synapse("get", synapse_id)
 
+def get_bam_file_name():
+    """
+    Sometimes the file.name in the synapse metadata
+    does not actually match the filename that is
+    downloaded. This will give you the actual
+    filename, by the expedient hack of
+    returning the filename with the most
+    recent ctime.
+    """
+    return max(os.listdir('.'), key=os.path.getctime)
+
 
 def convert_bam_to_fastq(bam_file_name):
     "convert bam to fastq"
@@ -438,6 +449,14 @@ def main():
         fprint("scratch is {}".format(scratch))
 
         download_from_synapse(synapse_id, bam_file_name)
+        # just in case this is one of those rare ones
+        # where the actual file downloaded is not
+        # the one listed in the synapse metadata:
+        old_bam_file_name = bam_file_name
+        bam_file_name = get_bam_file_name()
+        if bam_file_name != old_bam_file_name:
+            fprint("Synapse metadata is incorrect!")
+            fprint("Actual bam file downloaded is {}.".format(bam_file_name))
         # dante TODO FIXME ...
         # if not get_fastq_files_from_s3(sra_accession):
         #     download_from_sra(sra_accession)
