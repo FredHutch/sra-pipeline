@@ -391,10 +391,17 @@ def submit_synapse(synapse_id, references, prefix):
             synapse_fh.write(line)
             synapse_fh.write("\n")
 
+<<<<<<< Updated upstream
     # remove this after testing
     # sh.head("-2", synapse_tsv_file, _out="tmp.tsv")
     # os.remove(synapse_tsv_file)
     # os.rename("tmp.tsv", synapse_tsv_file)
+=======
+    # remove this after testing...
+    sh.head("-2", synapse_tsv_file, _out="tmp.tsv")
+    os.remove(synapse_tsv_file)
+    os.rename("tmp.tsv", synapse_tsv_file)
+>>>>>>> Stashed changes
     # end section to remove
 
     return submit(
