@@ -5,14 +5,13 @@ This repository contains code for running an analysis pipeline in
 
 ## What the pipeline does
 
-Given a set of SRA accession numbers, AWS Batch will start an
+Given a Synapse ID pointing to a collection of BAM files, AWS Batch will start an
 [array job](https://docs.aws.amazon.com/batch/latest/userguide/array_jobs.html)
-where each child will process a single accession number, doing the following:
+where each child will process a single bam file, doing the following:
 
-* Download the file(s) associated with the accession number from
-  [SRA](https://www.ncbi.nlm.nih.gov/sra), using the
-  [prefetch](https://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=prefetch)
-  tool with the [Aspera Connect](http://downloads.asperasoft.com/connect2//) transport.
+* Download the BAM associated with the synapse ID
+* Using `samtools`, convert the BAM file to fastq
+* 
 * Start a [bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) pipe which
   runs the following steps, once for each of three viral genomes.
   * extracts the downloaded `.sra` file to `fastq` format using
