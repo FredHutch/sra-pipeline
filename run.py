@@ -135,8 +135,8 @@ def setup_scratch():
             # and one because of the header line.
             line = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")) + 2
             synapse_metadata = get_synapse_metadata(line)
-            scratch = "/scratch/{}/{}/".format(
-                os.getenv("AWS_BATCH_JOB_ID"), os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")
+            scratch = "/scratch/{}".format(
+                os.getenv("AWS_BATCH_JOB_ID").replace(":", "_")
             )
         else:
             fprint("this is not an array job")
@@ -389,6 +389,7 @@ def download_from_synapse(synapse_id, bam_file_name):
         os.remove(bam_file_name)
     sh.synapse("get", synapse_id)
 
+
 def get_bam_file_name():
     """
     Sometimes the file.name in the synapse metadata
@@ -398,7 +399,7 @@ def get_bam_file_name():
     returning the filename with the most
     recent ctime.
     """
-    return max(os.listdir('.'), key=os.path.getctime)
+    return max(os.listdir("."), key=os.path.getctime)
 
 
 def convert_bam_to_fastq(bam_file_name):
