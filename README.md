@@ -5,30 +5,19 @@ This repository contains code for running an analysis pipeline in
 
 ## What the pipeline does
 
-Given a set of SRA accession numbers, AWS Batch will start an
+Given a Synapse ID pointing to a collection of fastq files, AWS Batch will start an
 [array job](https://docs.aws.amazon.com/batch/latest/userguide/array_jobs.html)
-where each child will process a single accession number, doing the following:
+where each child will process a single fastq file, doing the following:
 
-* Download the file(s) associated with the accession number from
-  [SRA](https://www.ncbi.nlm.nih.gov/sra), using the
-  [prefetch](https://trace.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=prefetch)
-  tool with the [Aspera Connect](http://downloads.asperasoft.com/connect2//) transport.
-* Start a [bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) pipe which
-  runs the following steps, once for each of three viral genomes.
-  * extracts the downloaded `.sra` file to `fastq` format using
-    [fastq-dump](https://ncbi.github.io/sra-tools/fastq-dump.html). The sra
-    file is highly compressed and this step can expand it to more than 20 times
-    its size, which is one reason we stream the data in a pipe: so as to
-    not need lots of scratch space.
-   * Pipe the `fastq` data through
-     [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+* Download the fastq file associated with the synapse ID
+* Run [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
      to search for the virus.
    * Pipe the output of `bowtie2` through
      [gzip](https://en.wikipedia.org/wiki/Gzip) to compress it prior to
      the next step.
    * stream the compressed output of `bowtie2` to an
      [S3](https://aws.amazon.com/s3/) bucket. The resulting file will
-     have an S3 URL like this: `s3://<bucket-name>/pipeline-results2/<SRA-accession-number>/<virus>/<SRA-accession-number>.sam.gz`.
+     have an S3 URL like this: `s3://<bucket-name>/<prefix>/<SRA-accession-number>/<virus>/<SRA-accession-number>.sam.gz`.
 
 
 ## Prerequisites/Requirements
@@ -49,34 +38,65 @@ git clone https://github.com/FredHutch/sra-pipeline.git
 cd sra-pipeline
 ```
 
+* Check out this branch:
 
+```
+git checkout feature/download-from-synapse
+```
 
 ## `sra_pipeline` utility
 
-A script called `sra_pipeline` is available to to simplify the following:
+A script called `sra_pipeline` is available to 
+facilitate job submission. 
+Use the `-s` option to specify a Synapse ID for 
+a synapse resource containing fastq files.
 
-* Display accession numbers that have already been processed.
-* Display accession numbers which are currently being processed.
-* Submit some number of new accession numbers to the pipeline, choosing
-  either randomly, by picking the smallest available data sets, or
-  by providing a file containing accession numbers.
+An example run might look like this:
+
+```
+./sra_pipeline -p myprefix -y hhv6a_u1102_untrimmed,hhv6b_z29_untrimmed,t_ref -s syn8612191
+```
+
+This will process all fastq files referenced by the
+synapse ID `syn8612191`, search them for
+hhv6a untrimmed, hhv6b untrimmed, and t_ref, and
+put the results in the `myprefix` prefix in S3.
 
 Running the utility with `--help` gives usage information:
 
 ```
 $ ./sra_pipeline --help
-usage: sra_pipeline.py [-h] [-c] [-i] [-s N] [-r N] [-f FILE]
+usage: sra_pipeline.py [-h] [-c JOB_ID] [-i JOB_ID] [-r JOB_ID] [-f FILE]
+                       [-p PREFIX] [-q STR] [-y REFERENCES] [-s SYNAPSE_ID]
+                       [job_id]
+
+positional arguments:
+  job_id                a job ID to search the logs of (use with -q only)
+                        (default: None)
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c, --completed       show completed accession numbers
-  -i, --in-progress     show accession numbers that are in progress
-  -s N, --submit-small N
-                        submit N jobs of ascending size
-  -r N, --submit-random N
-                        submit N randomly chosen jobs
+  -c JOB_ID, --completed JOB_ID
+                        show completed accession numbers (default: None)
+  -i JOB_ID, --in-progress JOB_ID
+                        show accession numbers that are in progress (default:
+                        None)
+  -r JOB_ID, --remaining JOB_ID
+                        show remaining items (not yet completed) (default:
+                        None)
   -f FILE, --submit-file FILE
-                        submit accession numbers contained in FILE
+                        submit accession numbers contained in FILE (default:
+                        None)
+  -p PREFIX, --prefix PREFIX
+                        override default prefix (default: pipeline-results)
+  -q STR, --query STR   string to search for in logs, must specify JOB_ID
+                        (default: finished downloading)
+  -y REFERENCES, --references REFERENCES
+                        comma-separated list of references (default: None)
+  -s SYNAPSE_ID, --synapse-id SYNAPSE_ID
+                        run against all fastq files listed under SYNAPSE_ID
+                        (default: None)
+
 ```
 
 
