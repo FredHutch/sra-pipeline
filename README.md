@@ -6,6 +6,7 @@ This repository contains code for running an analysis pipeline in
 ## What the pipeline does
 
 Given a Synapse ID pointing to a collection of BAM files, AWS Batch will start an
+[array job]an
 [array job](https://docs.aws.amazon.com/batch/latest/userguide/array_jobs.html)
 where each child will process a single bam file, doing the following:
 
@@ -38,6 +39,12 @@ where each child will process a single bam file, doing the following:
 ```
 git clone https://github.com/FredHutch/sra-pipeline.git
 cd sra-pipeline
+```
+
+* Check out this branch:
+
+```
+git checkout feature/samtools-bam-to-sam
 ```
 
 
