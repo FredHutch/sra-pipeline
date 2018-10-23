@@ -134,23 +134,20 @@ def setup_scratch():
             # add 2, one because AWS counts from 0 and sed counts from 1,
             # and one because of the header line.
             line = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")) + 2
-            synapse_metadata = get_synapse_metadata(line)
             scratch = "/scratch/{}".format(
                 os.getenv("AWS_BATCH_JOB_ID").replace(":", "_")
             )
         else:
             fprint("this is not an array job")
-            synapse_metadata = get_synapse_metadata(2)
             scratch = "/scratch/{}/".format(os.getenv("AWS_BATCH_JOB_ID"))
         sh.mkdir("-p", scratch)
         sh.ln("-s", scratch, "{}/ncbi".format(HOME))
         sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
     else:
         fprint("this is not an aws batch job")
-        synapse_metadata = get_synapse_metadata(2)
         scratch = "."
         sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
-    return scratch, synapse_metadata
+    return scratch
 
 
 def get_fastq_files_from_s3(sra_accession):
@@ -427,20 +424,36 @@ def main():
     fprint("public hostname for this container is {}".format(get_metadata()))
     fprint("container_id is {}".format(get_container_id()))
     configure_aws()
-    # get ngc file from s3
-    sh.aws("s3", "cp", "s3://fh-pi-jerome-k/pipeline-auth-files/prj_17102.ngc", ".")
-    sh.vdb_config("--import", "prj_17102.ngc")
-    # get synapse auth file from s3
-    sh.aws(
-        "s3",
-        "cp",
-        "s3://fh-pi-jerome-k/pipeline-auth-files/.synapseConfig",
-        "{}/".format(HOME),
-    )
-    scratch, synapse_metadata = setup_scratch()
+
+    scratch = setup_scratch()
     with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
         sh.mkdir("-p", PTMP)
         clean_directory(PTMP)
+
+        # pseudocode
+
+        # look at AWS_BATCH_JOB_ARRAY_INDEX
+        index = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"))
+        # list contents of s3 bucket and prefix
+        # divide number of objects in half
+        # counting from 0, find the indexth 
+        # file (and the next file after that)
+        # and download them using S3
+
+        # using boto3 library,
+        # list contents of bucket + prefix
+        # extract keys (names of objects)
+        # make sure they are sorted 
+
+        # 0
+        # results[0] and results[1]
+        # if index was 10 and there are 30 files
+        # 
+
+        # call your existing code
+
+        # upload results to S3
+
 
         synapse_id = synapse_metadata["file.id"]
         bam_file_name = synapse_metadata["file.name"]
