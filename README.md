@@ -53,6 +53,12 @@ git clone https://github.com/FredHutch/sra-pipeline.git
 cd sra-pipeline
 ```
 
+And install the dependencies:
+
+```
+pipenv install
+```
+
 ### Starting the job
 
 First make sure that you have checked out the correct branch of code and that 
@@ -62,6 +68,14 @@ you have the latest changes:
 git checkout feature/fastq-files-from-s3
 git pull
 ```
+
+Activate the virtual environment containing the dependencies:
+
+```
+pipenv shell
+```
+
+
 
 
 
