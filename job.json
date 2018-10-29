@@ -1,0 +1,40 @@
+{
+    "jobName": "nipt_pipeline_test_0",
+    "jobQueue": "mixed",
+    "arrayProperties": {
+        "size": 2382
+    },
+    "jobDefinition": "sra-pipeline:11",
+    "containerOverrides": {
+        "environment": [
+            {
+                "name": "BATCH_FILE_URL",
+                "value": "https://raw.githubusercontent.com/FredHutch/sra-pipeline/feature/fastq-files-from-s3/run.py"
+            },
+            {
+                "name": "BATCH_FILE_TYPE",
+                "value": "script"
+            },
+            {
+                "name": "GIT_BRANCH",
+                "value": "feature/fastq-files-from-s3"
+            },
+            {
+                "name": "S3_BUCKET",
+                "value": "fh-pi-jerome-k"
+            },
+            {
+                "name": "REFERENCE_LOCATION",
+                "value": "s3://fh-pi-jerome-k/fasta-index-files/"
+            },
+            {
+                "name": "REFERENCES",
+                "value": "cytomegalovirus,hhv6a_nipt,hhv6b_nipt"
+            },
+            {
+                "name": "OUTPUT_LOCATION",
+                "value": "s3://fh-pi-jerome-k/nipt_pipeline/output"
+            }
+        ]
+    }
+}

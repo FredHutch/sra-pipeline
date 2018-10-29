@@ -3,42 +3,22 @@
 "script to run on AWS batch instance"
 
 import contextlib
-import csv
-import datetime
-from functools import partial
 import glob
 import json
 import os
 import os.path
 from pathlib import Path
 import random
-import re
 import sys
 import time
-import traceback
 
 import sh
 import requests
 
+import get_num_pairs
+
 HOME = os.getenv("HOME")
 PTMP = "tmp"
-
-
-class Timer:  # pylint: disable=too-few-public-methods
-    "tweaked from http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/"
-
-    def __init__(self):
-        self.start = None
-        self.end = None
-        self.interval = None
-
-    def __enter__(self):
-        self.start = datetime.datetime.now()
-        return self
-
-    def __exit__(self, *args):
-        self.end = datetime.datetime.now()
-        self.interval = self.end - self.start
 
 
 @contextlib.contextmanager
@@ -100,29 +80,6 @@ def ensure_correct_environment():
         sys.exit(1)
 
 
-def get_synapse_metadata(batch_job_array_index):
-    """
-    given a line number, get synapse metadata for that line
-    Line number (starts from 1, not 0) should take into account header. So if we want the
-    first non header line, it should be 2.
-
-    Returns the line converted to a dict where the keys are
-    from the header line of the tsv.
-    """
-    if os.path.exists("temp.tsv"):
-        os.remove("temp.tsv")
-    with open("temp.tsv", "a") as tmpfile:
-        sh.head("-1", "accessionlist.txt", _out=tmpfile)
-        line = batch_job_array_index
-        sh.sed("{}q;d".format(line), "accessionlist.txt", _out=tmpfile)
-    hsh = None
-    with open("temp.tsv") as tmpfile_r:
-        reader = csv.DictReader(tmpfile_r, delimiter="\t")
-        for row in reader:
-            hsh = row
-    return dict(hsh)
-
-
 def setup_scratch():
     "sets up scratch, returns scratch dir and sra accession number"
     sh.aws("s3", "cp", os.getenv("ACCESSION_LIST"), "accessionlist.txt")
@@ -133,7 +90,6 @@ def setup_scratch():
             fprint("this is an array job")
             # add 2, one because AWS counts from 0 and sed counts from 1,
             # and one because of the header line.
-            line = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX")) + 2
             scratch = "/scratch/{}".format(
                 os.getenv("AWS_BATCH_JOB_ID").replace(":", "_")
             )
@@ -236,121 +192,6 @@ def download_from_sra(sra_accession):
             sys.exit(prefetch_exit_code)
 
 
-def run_fastq_dump(sra_accession):
-    "run fastq-dump"
-    fprint("running fastq-dump...")
-
-    # pfd0 = sh.Command("/home/neo/miniconda3/bin/parallel-fastq-dump")
-    pfd = sh.parallel_fastq_dump(
-        "--sra-id",
-        "sra/{}.sra".format(sra_accession),
-        "--threads",
-        os.getenv("NUM_CORES"),
-        "--gzip",
-        "--split-files",
-        "-W",
-        "-I",
-        "--tmpdir",
-        PTMP,
-        _iter=True,
-        _err_to_out=True,
-    )
-    with Timer() as timer:
-        for line in pfd:
-            fprint(line)
-
-    fprint("duration of fastq-dump: {}".format(timer.interval))
-
-
-def copy_fastqs_to_s3(sra_accession):
-    "copy fastqs to s3"
-    for i in range(1, 3):
-        sh.aws(
-            "s3",
-            "cp",
-            "{}_{}.fastq.gz".format(sra_accession, i),
-            "s3://{}/pipeline-fastq/{}/".format(
-                os.getenv("BUCKET_NAME"), sra_accession
-            ),
-        )
-
-
-def run_bowtie(synapse_id, fastq_file_name):
-    """
-    run bowtie2
-    synapse_id - synapse id
-    fastq_file_name - fastq file name
-    """
-    viruses = os.getenv("REFERENCES").split(",")
-    viruses = [x.strip() for x in viruses]
-    bowtie2 = partial(sh.bowtie2, _piped=True, _bg_exc=False, _err="bowtie2.err")
-
-    for virus in viruses:
-        bowtie_args = [
-            "--local",
-            "-p",
-            os.getenv("NUM_CORES"),
-            "--no-unal",
-            "-x",
-            "/bt2/{}".format(virus),
-            "-U",
-            fastq_file_name,
-        ]
-        fprint("processing virus {} ...".format(virus))
-        if object_exists_in_s3(
-            "{}/{}/{}/{}.sam".format(os.getenv("PREFIX"), synapse_id, virus, synapse_id)
-        ):
-            fprint(
-                "output sam file already exists in s3 for virus {}, skipping...".format(
-                    virus
-                )
-            )
-        else:
-            with Timer() as timer:
-                for line in sh.aws(
-                    bowtie2(*bowtie_args),
-                    "s3",
-                    "cp",
-                    "-",
-                    "s3://{}/{}/{}/{}/{}.sam".format(
-                        os.getenv("BUCKET_NAME"),
-                        os.getenv("PREFIX"),
-                        synapse_id,
-                        virus,
-                        synapse_id,
-                    ),
-                    _iter=True,
-                ):
-                    fprint(line)
-            fprint("bowtie2 duration for {}: {}".format(virus, timer.interval))
-            fprint("stderr output of bowtie2:")
-            for line in sh.cat("bowtie2.err", _iter=True):
-                fprint(line)
-            sh.aws(
-                "s3",
-                "cp",
-                "bowtie2.err",
-                "s3://{}/{}/{}/{}/".format(
-                    os.getenv("BUCKET_NAME"), os.getenv("PREFIX"), synapse_id, virus
-                ),
-            )
-
-
-def get_read_counts(sra_accession):
-    "return read counts for fastq files 1 and 2"
-    results = []
-    for i in range(1, 3):
-        result = int(
-            sh.awk(
-                sh.zcat("{}_{}.fastq.gz".format(sra_accession, i)),
-                "{s++}END{print s/4}",
-                _piped=True,
-            ).strip()
-        )
-        results.append(result)
-    return results[0], results[1]
-
-
 def cleanup(scratch):
     "clean up"
     fprint("done with pipeline, cleaning up")
@@ -379,42 +220,6 @@ def add_to_path(directory):
     print("Added {} to PATH.".format(directory))
 
 
-def download_from_synapse(synapse_id, bam_file_name):
-    "download fastq file from synapse"
-    # TODO FIXME think about piping/streaming to bowtie2?
-    if os.path.exists(bam_file_name):
-        os.remove(bam_file_name)
-    sh.synapse("get", synapse_id)
-
-
-def get_bam_file_name():
-    """
-    Sometimes the file.name in the synapse metadata
-    does not actually match the filename that is
-    downloaded. This will give you the actual
-    filename, by the expedient hack of
-    returning the filename with the most
-    recent ctime.
-    """
-    return max(os.listdir("."), key=os.path.getctime)
-
-
-def convert_bam_to_fastq(bam_file_name):
-    "convert bam to fastq"
-    fastq_file_name = re.sub(".bam$", ".fastq.gz", bam_file_name)
-    sh.gzip(
-        sh.samtools(
-            sh.samtools("view", "-b", "-f", "4", bam_file_name, _piped=True),
-            "bam2fq",
-            "-",
-            _piped=True,
-        ),
-        "-f",
-        _out=fastq_file_name,
-    )
-    return fastq_file_name
-
-
 def main():
     "do the work"
     ensure_correct_environment()
@@ -426,65 +231,44 @@ def main():
     configure_aws()
 
     scratch = setup_scratch()
+
+    sh.git("clone", "https://github.com/FredHutch/sra-pipeline.git")
+    scratch = os.path.join("scratch", "sra-pipeline")
+
     with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
-        sh.mkdir("-p", PTMP)
-        clean_directory(PTMP)
+        sh.git("checkout", os.getenv("GIT_BRANCH"))
 
-        # pseudocode
+        # sh.mkdir("-p", PTMP)
+        # clean_directory(PTMP)
 
-        # look at AWS_BATCH_JOB_ARRAY_INDEX
         index = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"))
-        # list contents of s3 bucket and prefix
-        # divide number of objects in half
-        # counting from 0, find the indexth 
-        # file (and the next file after that)
-        # and download them using S3
+        fastq_pair_name = get_num_pairs.get_pairs()[index]
+        bucket = os.getenv("S3_BUCKET")
 
-        # using boto3 library,
-        # list contents of bucket + prefix
-        # extract keys (names of objects)
-        # make sure they are sorted 
+        # TODO check S3 for output file; if it already exists, exit
 
-        # 0
-        # results[0] and results[1]
-        # if index was 10 and there are 30 files
-        # 
+        for fnum in range(1, 3):
+            sh.aws(
+                "s3",
+                "cp",
+                "s3://{}/{}.{}.fastq.gz".format(bucket, fastq_pair_name, fnum),
+                ".",
+            )
+        sh.mkdir("indexes")
+        sh.aws("s3", "cp", os.getenv("REFERENCE_LOCATION"), "./indexes/", "--recursive")
 
-        # call your existing code
+        references = os.getenv("REFERENCES").split(",")
+        filename = fastq_pair_name.split("/")[-1]
+        for ref in references:
+            sh.python3("nipt_pipeline.py", filename, ref)
+            sh.aws(
+                "s3",
+                "cp",
+                "{}.sam".format(filename),
+                "{}/{}/".format(os.getenv("OUTPUT_LOCATION"), ref),
+            )
 
-        # upload results to S3
-
-
-        synapse_id = synapse_metadata["file.id"]
-        bam_file_name = synapse_metadata["file.name"]
-
-        fprint("synapse id is", synapse_id)
-        fprint("bam (?) file name is", bam_file_name)
-        fprint("scratch is {}".format(scratch))
-
-        download_from_synapse(synapse_id, bam_file_name)
-        # just in case this is one of those rare ones
-        # where the actual file downloaded is not
-        # the one listed in the synapse metadata:
-        old_bam_file_name = bam_file_name
-        bam_file_name = get_bam_file_name()
-        if bam_file_name != old_bam_file_name:
-            fprint("Synapse metadata is incorrect!")
-            fprint("Actual bam file downloaded is {}.".format(bam_file_name))
-        # dante TODO FIXME ...
-        # if not get_fastq_files_from_s3(sra_accession):
-        #     download_from_sra(sra_accession)
-        #     run_fastq_dump(sra_accession)
-        #     copy_fastqs_to_s3(sra_accession)
-        fastq_file_name = convert_bam_to_fastq(bam_file_name)
-        try:
-            run_bowtie(synapse_id, fastq_file_name)
-        except:  # pylint: disable=bare-except
-            fprint("Unexpected exception:")
-            fprint(traceback.print_exception(*sys.exc_info()))
-            sys.exit(1)
-        finally:  # hopefully we still exit with an error code if there was an error
-            cleanup(scratch)
+    cleanup(scratch)
 
 
 if __name__ == "__main__":

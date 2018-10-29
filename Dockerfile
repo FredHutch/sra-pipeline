@@ -4,7 +4,7 @@ FROM ubuntu:16.04
 RUN apt-get update -y
 
 
-RUN apt-get update -y && apt-get install -y  curl bzip2 perl build-essential libssl-dev unzip htop pv software-properties-common python-software-properties bzip2 \
+RUN apt-get update -y && apt-get install -y  curl bzip2 perl git build-essential libssl-dev unzip htop pv software-properties-common python-software-properties bzip2 \
     g++ \
     libbz2-dev \
     liblzma-dev \
