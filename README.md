@@ -68,7 +68,7 @@ git pull
 First, determine how many pairs there are by running this script:
 
 ```
-python get_num_pairs.py
+python3 get_num_pairs.py
 ```
 
 Assuming the upload is done, that will give you a number. You can then paste that
