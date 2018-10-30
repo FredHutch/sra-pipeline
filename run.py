@@ -223,7 +223,6 @@ def main():
     scratch = setup_scratch()
 
     scratch = os.path.join(scratch, "sra-pipeline-clone")
-    fprint("about to clone to {}".format(scratch))
     sh.git("clone", "https://github.com/FredHutch/sra-pipeline.git", scratch)
 
     # with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
@@ -233,10 +232,6 @@ def main():
         # sh.mkdir("-p", PTMP)
         # clean_directory(PTMP)
 
-        fprint("current directory is {}".format(os.getcwd()))
-        files = os.listdir()
-        for fyle in files:
-            fprint(fyle)
         index = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"))
 
         spec = importlib.util.spec_from_file_location(

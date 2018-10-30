@@ -38,7 +38,9 @@ RUN unzip bowtie2-2.3.4.1-linux-x86_64.zip
 
 # TODO install pipenv and run `pipenv install` 
 # to automatically install all required python deps
-RUN pip3.6 install awscli requests sh synapseclient
+RUN pip3.6 install awscli requests sh synapseclient boto3
+
+
 
 ADD bt2/ /bt2/
 
