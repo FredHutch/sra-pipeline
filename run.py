@@ -223,7 +223,7 @@ def main():
 
     scratch = setup_scratch()
 
-    scratch = os.path.join(scratch, "sra-pipeline")
+    scratch = os.path.join(scratch, "sra-pipeline-clone")
     fprint("about to clone to {}".format(scratch))
     sh.git("clone", "https://github.com/FredHutch/sra-pipeline.git", scratch)
 
