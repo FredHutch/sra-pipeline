@@ -80,8 +80,6 @@ def setup_scratch():
         sh.rm("-rf", "{}/ncbi".format(HOME))
         if os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"):
             fprint("this is an array job")
-            # add 2, one because AWS counts from 0 and sed counts from 1,
-            # and one because of the header line.
             scratch = "/scratch/{}".format(
                 os.getenv("AWS_BATCH_JOB_ID").replace(":", "_")
             )
@@ -234,6 +232,10 @@ def main():
         # sh.mkdir("-p", PTMP)
         # clean_directory(PTMP)
 
+        fprint("current directory is {}".format(os.getcwd()))
+        files = os.listdir()
+        for fyle in files:
+            fprint(fyle)
         index = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"))
         import get_num_pairs
 

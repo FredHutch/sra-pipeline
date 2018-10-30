@@ -4,7 +4,7 @@
     "arrayProperties": {
         "size": 2
     },
-    "jobDefinition": "sra-pipeline:11",
+    "jobDefinition": "sra-pipeline:12",
     "containerOverrides": {
         "environment": [
             {
