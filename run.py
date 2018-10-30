@@ -15,7 +15,6 @@ import time
 import sh
 import requests
 
-import get_num_pairs
 
 HOME = os.getenv("HOME")
 PTMP = "tmp"
@@ -235,13 +234,16 @@ def main():
     sh.git("clone", "https://github.com/FredHutch/sra-pipeline.git")
     scratch = os.path.join("scratch", "sra-pipeline")
 
-    with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
+    # with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
+    with working_directory(Path(scratch)):
         sh.git("checkout", os.getenv("GIT_BRANCH"))
 
         # sh.mkdir("-p", PTMP)
         # clean_directory(PTMP)
 
         index = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"))
+        import get_num_pairs
+
         fastq_pair_name = get_num_pairs.get_pairs()[index]
         bucket = os.getenv("S3_BUCKET")
 
