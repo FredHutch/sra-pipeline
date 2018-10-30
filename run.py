@@ -4,6 +4,7 @@
 
 import contextlib
 import glob
+import importlib.util
 import json
 import os
 import os.path
@@ -237,7 +238,14 @@ def main():
         for fyle in files:
             fprint(fyle)
         index = int(os.getenv("AWS_BATCH_JOB_ARRAY_INDEX"))
-        import get_num_pairs
+
+        spec = importlib.util.spec_from_file_location(
+            "get_num_pairs", "get_num_pairs.py"
+        )
+        get_num_pairs = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(get_num_pairs)
+
+        # import get_num_pairs
 
         fastq_pair_name = get_num_pairs.get_pairs()[index]
         bucket = os.getenv("S3_BUCKET")
