@@ -72,13 +72,6 @@ def configure_aws():
         sh.aws("configure", "set", key, value)
 
 
-def ensure_correct_environment():
-    "ensure correct environment"
-    if not os.getenv("NUM_CORES"):
-        fprint("NUM_CORES is not set, exiting")
-        sys.exit(1)
-
-
 def setup_scratch():
     "sets up scratch, returns scratch dir and sra accession number"
     sh.aws("s3", "cp", os.getenv("ACCESSION_LIST"), "accessionlist.txt")
@@ -221,7 +214,6 @@ def add_to_path(directory):
 
 def main():
     "do the work"
-    ensure_correct_environment()
     add_to_path("/home/neo/miniconda3/bin")
     add_to_path("/bowtie2-2.3.4.1-linux-x86_64")
     add_to_path("/sratoolkit.2.9.2-ubuntu64/bin")
