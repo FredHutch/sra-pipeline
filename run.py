@@ -224,7 +224,7 @@ def main():
     scratch = setup_scratch()
 
     sh.git("clone", "https://github.com/FredHutch/sra-pipeline.git")
-    scratch = os.path.join("scratch", "sra-pipeline")
+    scratch = os.path.join(scratch, "sra-pipeline")
 
     # with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
     with working_directory(Path(scratch)):
