@@ -240,9 +240,8 @@ def main():
         get_num_pairs = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(get_num_pairs)
 
-        # import get_num_pairs
 
-        fastq_pair_name = get_num_pairs.get_pairs()[index]
+        fastq_pair_name = get_num_pairs.get_unfinished_pairs()[index]
         bucket = os.getenv("S3_BUCKET")
 
         # TODO check S3 for output file; if it already exists, exit

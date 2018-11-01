@@ -12,24 +12,18 @@ import boto3
 # 2300 pairs total?
 
 
-def get_pairs():
+def list_bucket(bucket, prefix):
+    "list bucket/prefix w/pagination"
+    rsrc = boto3.resource("s3")
+    bkt = rsrc.Bucket(bucket)
+    keys = [x for x in bkt.objects.filter(Prefix=prefix)]
+    return [x.key for x in keys]
+
+def get_all_pairs():
     "do the work"
-    s3 = boto3.client("s3")  # pylint: disable=invalid-name
-
-    args = dict(
-        Bucket="fh-pi-jerome-k", Delimiter="/", Prefix="nipt_pipeline/all_fastqs/"
-    )
-
-    keys = []
-
-    while True:
-        resp = s3.list_objects_v2(**args)
-        keys.extend([x["Key"] for x in resp["Contents"]])
-        if not resp["IsTruncated"]:
-            break
-        args["ContinuationToken"] = resp["NextContinuationToken"]
-
+    keys = list_bucket("fh-pi-jerome-k", "nipt_pipeline/all_fastqs") # TODO unhardcode
     keydict = defaultdict(int)
+
 
     for key in keys:
         if not key.endswith(".fastq.gz"):
@@ -40,6 +34,20 @@ def get_pairs():
 
     return [k for k, v in keydict.items() if v == 2]
 
+def get_unfinished_pairs():
+    "get unfinished pairs"
+    all_pairs = [x.split("/")[-1] for x in get_all_pairs()]
+    output_keys = list_bucket("fh-pi-jerome-k", "nipt_pipeline/output") # TODO unhardcode
+    keydict = defaultdict(int)
+    for output_key in output_keys:
+        key = output_key.split("/")[-1].replace(".sam", "")
+        keydict[key] += 1
+    num_refs = 3 # TODO unhardcode
+    finished = [k for k, v in keydict.items() if v == num_refs]
+    allp = set(all_pairs)
+    unfinished = allp - set(finished)
+    return list(unfinished)
+
 
 if __name__ == "__main__":
-    print(len(get_pairs()))
+    print(len(get_all_pairs()))

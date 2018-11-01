@@ -2,7 +2,7 @@
     "jobName": "nipt_pipeline_test_0",
     "jobQueue": "mixed",
     "arrayProperties": {
-        "size": 2483
+        "size": 51
     },
     "jobDefinition": "sra-pipeline:12",
     "containerOverrides": {
