@@ -117,12 +117,12 @@ def setup_scratch():
             scratch = "/scratch/{}/".format(os.getenv("AWS_BATCH_JOB_ID"))
         sh.mkdir("-p", scratch)
         sh.ln("-s", scratch, "{}/ncbi".format(HOME))
-        sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
+        sh.mkdir("-p", "{}/ncbi/dbGaP-19838".format(HOME))
     else:
         fprint("this is not an aws batch job")
         sra_accession = sh.sed("1q;d", "accessionlist.txt").strip()
         scratch = "."
-        sh.mkdir("-p", "{}/ncbi/dbGaP-17102".format(HOME))
+        sh.mkdir("-p", "{}/ncbi/dbGaP-19838".format(HOME))
     return scratch, sra_accession
 
 
@@ -183,7 +183,7 @@ def download_from_sra(sra_accession):
         )
         time.sleep(minutes_to_sleep * 60)
     fprint("Downloading {} from sra...".format(sra_accession))
-    if os.path.exists("{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession)):
+    if os.path.exists("{}/ncbi/dbGaP-19838/sra/{}.sra".format(HOME, sra_accession)):
         fprint("SRA file already exists, skipping download")
     else:
         # prefetch_cmd = sh.Command("/sratoolkit.2.9.2-ubuntu64/bin/prefetch")
@@ -206,7 +206,7 @@ def download_from_sra(sra_accession):
                     prefetch_exit_code
                 )
             )
-            sh.rm("-rf", "{}/ncbi/dbGaP-17102/sra/{}.sra".format(HOME, sra_accession))
+            sh.rm("-rf", "{}/ncbi/dbGaP-19838/sra/{}.sra".format(HOME, sra_accession))
             for item in ["sra", "refseq"]:
                 clean_directory("{}/ncbi/public/{}".format(HOME, item))
             sys.exit(prefetch_exit_code)
@@ -372,10 +372,10 @@ def main():
     fprint("container_id is {}".format(get_container_id()))
     configure_aws()
     # get ngc file from s3
-    sh.aws("s3", "cp", "s3://fh-pi-jerome-k/pipeline-auth-files/prj_17102.ngc", ".")
-    sh.vdb_config("--import", "prj_17102.ngc")
+    sh.aws("s3", "cp", "s3://fh-pi-jerome-k/pipeline-auth-files/prj_19838.ngc", ".")
+    sh.vdb_config("--import", "prj_19838.ngc")
     scratch, sra_accession = setup_scratch()
-    with working_directory(Path("{}/ncbi/dbGaP-17102".format(HOME))):
+    with working_directory(Path("{}/ncbi/dbGaP-19838".format(HOME))):
         sh.mkdir("-p", PTMP)
         clean_directory(PTMP)
         fprint("sra accession is {}".format(sra_accession))
