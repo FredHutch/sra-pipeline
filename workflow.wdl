@@ -1,7 +1,7 @@
 workflow sra_pipeline {
     File ngcFile
     File listOfAccessions
-    String listOfViruses
+    File virusesFile
 
     Array[File] arrayOfAccessions = read_lines(listOfAccessions)
 
@@ -10,23 +10,13 @@ workflow sra_pipeline {
             input:
                 accession = accession,
                 ngcFile = ngcFile, 
-                listOfViruses = listOfViruses
-                
+                virusesFile = virusesFile
         }
     }
 
 
   output {
-    Array[String] out = process_accession.out
-    Array[String] err = process_accession.err
-    # TODO ....
-    # Array[File] outputPizzlyJson = Pizzly.output_json
-    # Array[File] outputPizzlyFasta = Pizzly.output_fasta
-    # # do we want to keep intermediate (Picard & Kallisto) outputs?
-    # # let's say yes for now...
-    # Array[File] outputKallisto = Kallisto.output_fusion
-    # Array[File] outputPicard1 = Picard.output_fastq1
-    # Array[File] outputPicard2 = Picard.output_fastq2
+    Array[File] samDir = process_accession.samDir
   }
 
 
@@ -38,7 +28,7 @@ task process_accession {
     String accession
     File ngcFile
     String ngc = sub(basename(ngcFile, ".ngc"), "prj_", "")
-    String listOfViruses
+    File virusesFile
 
     command {
         set -e
@@ -53,15 +43,16 @@ task process_accession {
         /home/neo/miniconda3/bin/parallel-fastq-dump --sra-id sra/${accession}.sra --threads 8 \
           --gzip --split-files -W -I --tmpdir ptmp
         # TODO build bt2 files on the fly, download fastas from s3
-        IFS=',' read -ra ADDR <<< "${listOfViruses}"
-        for virus in "${ADDR[@]}"; do
+        for virus in $(cat ${virusesFile}); do
             # process "$virus"
             # TODO unhardcode number of cores (value of -p below)
             set +e
             # TODO handle bowtie2 output to sam file???
+            mkdir sam_output
             bowtie2 --local -p 8 --no-unal -x /bt2/$virus \
               -1 ${accession}_1.fastq.gz \
               -2 ${accession}_2.fastq.gz \
+              > sam_output/${accession}_$virus.sam \
               2> bowtie2.stderr
             rc=$?
             set -e
@@ -70,12 +61,16 @@ task process_accession {
                 if grep -q "fewer reads in file specified with -2" bowtie2.stderr
                 then
                     bowtie2 --local -p 8 --no-unal -x /bt2/$virus \
-                      -U ${accession}_1.fastq.gz 
+                      -U ${accession}_1.fastq.gz \
+                      > sam_output/${accession}_$virus.sam \
+
                     
                 elif grep -q "fewer reads in file specified with -1" bowtie2.stderr
                 then
                     bowtie2 --local -p 8 --no-unal -x /bt2/$virus \
-                      -U ${accession}_2.fastq.gz 
+                      -U ${accession}_2.fastq.gz \
+                      > sam_output/${accession}_$virus.sam \
+
                 fi
                 done
             fi
@@ -91,9 +86,7 @@ task process_accession {
     }
 
     output {
-        String out = read_string(stdout())
-        String err = read_string(stderr())
-        # TODO ....
+        File samDir = "sam_output/"
     }
 
 }

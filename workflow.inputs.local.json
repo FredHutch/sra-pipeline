@@ -1,6 +1,5 @@
 {
-  "sra_pipeline.listOfViruses": "hhv7_untrimmed,hhv6b",
+  "sra_pipeline.virusesFile": "viruses.txt",
   "sra_pipeline.listOfAccessions": "accessions.txt",
   "sra_pipeline.ngcFile": "prj_19838.ngc"
 }
-
