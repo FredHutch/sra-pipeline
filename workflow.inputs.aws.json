@@ -1,0 +1,5 @@
+{
+  "sra_pipeline.virusesFile": "s3://fh-pi-jerome-k/cromwell-inputs/viruses.txt",
+  "sra_pipeline.listOfAccessions": "accessions.txt",
+  "sra_pipeline.ngcFile": "s3://fh-pi-jerome-k/pipeline-auth-files/prj_19838.ngc"
+}
