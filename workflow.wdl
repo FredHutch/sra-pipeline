@@ -12,12 +12,13 @@ workflow sra_pipeline {
                 ngcFile = ngcFile, 
                 virusesFile = virusesFile
         }
+
+        output {
+            Array[File] samDir = process_accession.samDir
+        }
     }
 
 
-  output {
-    Array[File] samDir = process_accession.samDir
-  }
 
 
 
