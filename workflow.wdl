@@ -73,9 +73,7 @@ task process_accession {
                       > sam_output/${accession}_$virus.sam \
 
                 fi
-                done
             fi
-            done
         done        
 
     }
