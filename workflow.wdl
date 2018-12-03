@@ -40,8 +40,8 @@ task process_accession {
         mkdir -p sra
         prefetch --transport http --max-size 100000000000 ${accession}
         mkdir -p ptmp
-        # TODO unhardcode --threads value
-        /home/neo/miniconda3/bin/parallel-fastq-dump --sra-id sra/${accession}.sra --threads 8 \
+        # TODO unhardcode --threads value (and path to executable)
+        /root/miniconda3/bin/parallel-fastq-dump --sra-id sra/${accession}.sra --threads 8 \
           --gzip --split-files -W -I --tmpdir ptmp
         # TODO build bt2 files on the fly, download fastas from s3
         for virus in $(cat ${virusesFile}); do
@@ -79,7 +79,7 @@ task process_accession {
     }
 
     runtime {
-        docker: "fredhutch/sra-pipeline-no-entrypoint:1"
+        docker: "fredhutch/sra-pipeline:root-only.1"
         cpu: 8
         mem: "10 GB"
     }
