@@ -10,8 +10,8 @@ process runBowtie {
   publishDir "${params.outDir}/${virus}/"
   // container "ubuntu:latest"
   container "comics/bowtie2"
-  cpus 4 // 8
-  memory '2 GB' // 10
+  cpus 8
+  memory '10 GB'
   input:
     set filename, file(reads)  from filePairChannel
     each file(genome) from viralGenomeChannel
@@ -22,6 +22,6 @@ process runBowtie {
     echo "filename is $filename"
     echo "genome is $genome"
     bowtie2-build $genome ref
-    bowtie2 --local --no-unal -p 4 -x ref -1 ${reads[0]} -2  ${reads[1]} -S ${filename}.sam
+    bowtie2 --local --no-unal -p 8 -x ref -1 ${reads[0]} -2  ${reads[1]} -S ${filename}.sam
     """
 }
