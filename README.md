@@ -2,6 +2,12 @@
 
 ## Prerequisites
 
+### AWS Credentials
+
+This assumes you have AWS Credentials in your
+`~/.aws` directory. If you don't, read 
+the [docs](https://sciwiki.fredhutch.org/scicomputing/access_credentials/#command-line-rhinogizmo-instructions) about getting them.
+
 ### Get a tower token
 
 Go to [https://tower.nf/login](https://tower.nf/login). Enter your email.
