@@ -82,6 +82,15 @@ Run the command:
 ../sra-pipeline/submit.sh
 ```
 
+Once you see a line that looks like this:
+
+```
+2019-10-11 12:46:38,765 INFO     [Nextflow AWS Batch Squared] Started nipt-pipeline-headnode-0 as AWS Batch ID c4cad3ec-db28-438b-83fb-2ee555169aff (unique Nextflow ID: c7cf67e9-5910-4b19-a75a-4edf780a38c8)
+```
+
+...your job has started, and it is OK to press control-c or turn off your computer.
+
+
 If you have a tower token, you can monitor your job
 at [https://tower.nf](https://tower.nf).
 
