@@ -7,7 +7,7 @@ viralGenomeChannel = Channel.from(params.viruses)
     .map{it -> file("${params.refPath}/${it}.fasta")}
 
 process runBowtie {
-  publishDir "${params.outDir}/${virus}/"
+  publishDir "${params.outDir}/${genome}/"
   // container "ubuntu:latest"
   container "comics/bowtie2"
   cpus 8

@@ -50,7 +50,7 @@ Now clone the repository that lets you run "batch squared" jobs:
 
 ```
 git clone https://github.com/FredHutch/nextflow-aws-batch-squared.git
-cd aws-batch-squared
+cd nextflow-aws-batch-squared
 ```
 
 #### Set up the virtual environment
