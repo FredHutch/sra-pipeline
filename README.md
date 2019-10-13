@@ -53,7 +53,7 @@ cd sra-pipeline
 
 ## `sra_pipeline` utility
 
-A script called `sra_pipeline` is available to to simplify the following:
+A script called `sra_pipeline` is available to simplify the following:
 
 * Display accession numbers that have already been processed.
 * Display accession numbers which are currently being processed.
