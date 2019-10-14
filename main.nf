@@ -7,7 +7,6 @@ viralGenomeChannel = Channel.from(params.viruses)
     .map{it -> file("${params.refPath}/${it}.fasta")}
 
 process runBowtie {
-  publishDir "${params.outDir}/${genome}/"
   // container "ubuntu:latest"
   container "comics/bowtie2"
   cpus 8
@@ -17,6 +16,7 @@ process runBowtie {
     each file(genome) from viralGenomeChannel
   output:
     set val(filename), val(genome), file("*.sam")
+  publishDir "${params.outDir}/${genome}/"
   script:
     """
     echo "filename is $filename"
