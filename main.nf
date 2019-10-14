@@ -16,7 +16,7 @@ process runBowtie {
     each file(genome) from viralGenomeChannel
   output:
     set val(filename), val(genome), file("*.sam")
-  publishDir "${params.outDir}/${genome}/"
+  publishDir "${params.outDir}/${genome.baseName}/"
   script:
     """
     echo "filename is $filename"
