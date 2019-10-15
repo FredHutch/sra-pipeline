@@ -22,6 +22,7 @@ COMMAND=$(cat <<'EOF'
   --job-queue spot-test 
   --name nipt-pipeline-headnode-0 
   --workflow s3://fh-pi-jerome-k/nextflow-scripts/nipt_pipeline/ 
+  --temporary-volume /docker_scratch 
   --watch 
 EOF
 )
